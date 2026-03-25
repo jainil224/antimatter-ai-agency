@@ -1,0 +1,23 @@
+<div class="service-card" 
+     [attr.data-num]="data.num" 
+     [class.active-highlight]="isActive"
+     [style.--shadow-inset]="data.shadowInset"
+     [style.--shadow-outer]="data.shadowOuter">
+  <div class="card-top">
+    <div class="card-num">{{ data.num }}</div>
+    <div class="card-arrow">↗</div>
+  </div>
+  <div class="card-bottom">
+    <div class="card-title">{{ data.title }}</div>
+    <div class="card-body">
+      <p class="card-desc">{{ data.desc }}</p>
+      <div class="card-services-label">SERVICES</div>
+      <ul class="card-services">
+        <li *ngFor="let service of data.services">{{ service }}</li>
+      </ul>
+      <div class="card-tools">
+        <span class="tool-badge" *ngFor="let tool of data.tools">{{ tool }}</span>
+      </div>
+    </div>
+  </div>
+</div>

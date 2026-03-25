@@ -1,0 +1,125 @@
+.page-container {
+  min-height: 100vh;
+  padding: 180px 8vw 100px;
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 120px;
+
+  .header-content {
+    max-width: 900px;
+    
+    .page-title {
+      font-size: clamp(3.5rem, 7vw, 6.5rem);
+      line-height: 1.1;
+      font-weight: 500;
+      letter-spacing: -0.04em;
+      margin-bottom: 30px;
+      
+      .text-accent {
+        color: var(--accent);
+      }
+    }
+    
+    .page-subtitle {
+      font-size: clamp(1.2rem, 2.2vw, 1.6rem);
+      color: rgba(255, 255, 255, 0.6);
+      max-width: 700px;
+      line-height: 1.6;
+    }
+  }
+
+  .manifesto-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 40px;
+    width: 100%;
+
+    .manifesto-card {
+      padding: 40px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+
+      .line {
+        position: absolute;
+        top: -1px;
+        left: 0;
+        width: 0%;
+        height: 1px;
+        background: var(--accent);
+      }
+
+      h2 {
+        font-size: 2rem;
+        font-weight: 400;
+        margin-bottom: 20px;
+        color: var(--text);
+      }
+
+      p {
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.5);
+        line-height: 1.6;
+      }
+    }
+  }
+
+  .team-section {
+    .section-title {
+      font-size: 2.5rem;
+      font-weight: 400;
+      margin-bottom: 50px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 30px;
+
+      .team-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        transition: background 0.3s ease;
+        cursor: none;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.06);
+        }
+
+        .avatar {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          background-color: #222;
+          flex-shrink: 0;
+          background-size: cover;
+
+          &.bg-1 { background: linear-gradient(135deg, #111, #4B5EFC); }
+          &.bg-2 { background: linear-gradient(135deg, #111, #9c4bfc); }
+          &.bg-3 { background: linear-gradient(135deg, #111, #4bebfc); }
+          &.bg-4 { background: linear-gradient(135deg, #111, #fc4b4b); }
+        }
+
+        .info {
+          h3 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 4px;
+          }
+          p {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.5);
+          }
+        }
+      }
+    }
+  }
+}

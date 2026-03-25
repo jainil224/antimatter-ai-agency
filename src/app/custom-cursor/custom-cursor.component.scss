@@ -1,0 +1,33 @@
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  mix-blend-mode: difference;
+  z-index: 9999;
+  pointer-events: none;
+  transition: width 0.15s ease, height 0.15s ease, background 0.15s ease;
+  will-change: transform;
+
+  &.hover {
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  background: var(--white);
+  border-radius: 50%;
+  z-index: 10000;
+  pointer-events: none;
+  will-change: transform;
+}

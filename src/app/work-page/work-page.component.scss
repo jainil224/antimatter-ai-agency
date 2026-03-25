@@ -1,0 +1,108 @@
+.page-container {
+  min-height: 100vh;
+  padding: 180px 8vw 100px;
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+
+  .header-content {
+    max-width: 800px;
+    
+    .page-title {
+      font-size: clamp(4rem, 8vw, 7rem);
+      line-height: 1.1;
+      font-weight: 500;
+      letter-spacing: -0.04em;
+      margin-bottom: 24px;
+      
+      .text-accent {
+        color: var(--accent);
+      }
+    }
+    
+    .page-subtitle {
+      font-size: clamp(1.1rem, 2vw, 1.4rem);
+      color: rgba(255, 255, 255, 0.6);
+      max-width: 500px;
+      line-height: 1.5;
+    }
+  }
+
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 40px;
+    width: 100%;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+
+    .project-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.4s ease;
+      cursor: none;
+      
+      &:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        transform: translateY(-5px);
+
+        .card-image {
+          transform: scale(1.05);
+        }
+      }
+
+      .card-image {
+        height: 280px;
+        width: 100%;
+        background-color: #111;
+        background-size: cover;
+        background-position: center;
+        transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        border-bottom: 1px solid var(--border);
+
+        &.bg-1 { background: linear-gradient(135deg, #111, #1a1a2e); }
+        &.bg-2 { background: linear-gradient(135deg, #111, #2d1b2e); }
+        &.bg-3 { background: linear-gradient(135deg, #111, #1b2d2a); }
+        &.bg-4 { background: linear-gradient(135deg, #111, #2d241b); }
+      }
+
+      .card-details {
+        padding: 30px;
+        position: relative;
+
+        h3 {
+          font-size: 1.5rem;
+          font-weight: 500;
+          margin-bottom: 8px;
+          color: var(--text);
+        }
+
+        p {
+          font-size: 1rem;
+          color: rgba(255, 255, 255, 0.5);
+          margin-bottom: 20px;
+        }
+
+        .pill {
+          display: inline-block;
+          padding: 6px 14px;
+          border-radius: 50px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 0.85rem;
+          background: rgba(255, 255, 255, 0.03);
+        }
+      }
+    }
+  }
+}

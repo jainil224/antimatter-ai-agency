@@ -1,0 +1,256 @@
+.case-studies {
+  position: relative;
+  z-index: 10;
+  padding: 100px 5%;
+}
+
+.cases-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.cases-list {
+  h2 {
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    font-weight: 400;
+    margin-bottom: 40px;
+  }
+}
+
+.case-item {
+  padding: 24px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid transparent;
+  transition: transform 0.3s ease, border-color 0.3s ease;
+  
+  &:first-of-type {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  &:hover {
+    border-top-color: rgba(255, 255, 255, 0.2);
+    border-bottom-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    
+    .case-arrow {
+      color: var(--white);
+      transform: translate(4px, -4px);
+    }
+  }
+}
+
+.case-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.case-title {
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.case-arrow {
+  color: var(--muted);
+  font-size: 1.2rem;
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.case-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.mockup-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.plane-device {
+  width: 320px;
+  height: 650px;
+  background: #1a1a1e;
+  border-radius: 40px;
+  border: 8px solid #333;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255,255,255,0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.plane-cam {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 14px;
+  background: #000;
+  border-radius: 10px;
+  z-index: 20;
+}
+
+.plane-screen {
+  width: 100%;
+  height: 100%;
+  background: var(--card-bg);
+  padding-top: 40px;
+}
+
+.p-ui {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.p-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.p-logo {
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+}
+
+.p-live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #16c8a0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(22, 200, 160, 0.1);
+  padding: 4px 10px;
+  border-radius: 20px;
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    background: #16c8a0;
+    border-radius: 50%;
+  }
+}
+
+.p-chart-area {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 20px;
+  position: relative;
+  height: 180px;
+  overflow: hidden;
+}
+
+.p-stats {
+  position: relative;
+  z-index: 2;
+}
+
+.p-val {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.p-inc {
+  color: #16c8a0;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.p-chart {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  background: linear-gradient(180deg, rgba(75, 94, 252, 0.2), transparent);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -10%;
+    width: 120%;
+    height: 100%;
+    border-top: 2px solid var(--accent);
+    border-radius: 50% 50% 0 0;
+    transform: translateY(-30px);
+  }
+}
+
+.p-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.p-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.p-c-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.p-c-val {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.p-prog-row {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.p-prog-label {
+  font-size: 0.75rem;
+  min-width: 90px;
+}
+
+.p-prog-wrap {
+  flex-grow: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.p-prog-bar {
+  width: 72%;
+  height: 100%;
+  background: linear-gradient(90deg, #4B5EFC, #7B5EFB);
+  border-radius: 3px;
+}
+
+.p-prog-val {
+  font-size: 0.75rem;
+  font-weight: 600;
+}

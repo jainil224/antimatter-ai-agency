@@ -1,0 +1,14 @@
+<section class="services-section">
+  <div class="services-pin" id="services-pin">
+    <div class="services-left"></div>
+    <div class="services-right" id="services-right">
+      <div class="services-header" id="services-header">
+        <h2>Our Services</h2>
+        <p>We offer comprehensive digital solutions tailored to elevate your business in an evolving technological landscape.</p>
+      </div>
+      <div class="services-track" id="services-track">
+        <app-service-card *ngFor="let s of services; let i = index" [data]="s" [index]="i" class="service-card-wrapper"></app-service-card>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,53 @@
+<div class="page-container atom-page">
+  <div class="content-split">
+    
+    <div class="text-panel">
+      <div class="eyebrow">Internal Product</div>
+      <h1 class="page-title">Atom <span class="text-accent">AI</span></h1>
+      <p class="description">Our proprietary neural engine. Built to ingest, analyze, and synthesize massive datasets thousands of times faster than traditional models.</p>
+      
+      <div class="metrics">
+        <div class="metric">
+          <span class="value">99.9%</span>
+          <span class="label">Uptime</span>
+        </div>
+        <div class="metric">
+          <span class="value">0.4ms</span>
+          <span class="label">Latency</span>
+        </div>
+        <div class="metric">
+          <span class="value">10k+</span>
+          <span class="label">Tokens/sec</span>
+        </div>
+      </div>
+      
+      <button class="primary-btn">Request Access</button>
+    </div>
+
+    <div class="terminal-panel">
+      <div class="terminal-header">
+        <div class="dots">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+        </div>
+        <div class="title">atom_core.ts</div>
+      </div>
+      <div class="terminal-body">
+        <pre><code><span class="keyword">import</span> {{ '{' }} <span class="type">NeuralEngine</span> {{ '}' }} <span class="keyword">from</span> <span class="string">'&#64;antimatter/core'</span>;
+
+<span class="keyword">const</span> <span class="variable">engine</span> = <span class="keyword">new</span> <span class="type">NeuralEngine</span>({{ '{' }}
+  <span class="property">threads</span>: <span class="number">1024</span>,
+  <span class="property">mode</span>: <span class="string">'hyper_compute'</span>,
+  <span class="property">shard_distribution</span>: <span class="boolean">true</span>
+{{ '}' }});
+
+<span class="keyword">await</span> engine.<span class="method">initialize</span>();
+<span class="comment">// Connection established. Ready for input.</span>
+<span class="keyword">const</span> <span class="variable">result</span> = <span class="keyword">await</span> engine.<span class="method">synthesize</span>(dataset);
+console.<span class="method">log</span>(result); <span class="blink">_</span></code></pre>
+      </div>
+    </div>
+
+  </div>
+</div>
