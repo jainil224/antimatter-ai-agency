@@ -1,9 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CustomCursorComponent } from './custom-cursor/custom-cursor.component';
-import { BackgroundCanvasComponent } from './background-canvas/background-canvas.component';
 import { NavbarComponent } from './navbar/navbar.component';
-import { ThreeSceneComponent } from './three-scene/three-scene.component';
 
 @Component({
   selector: 'app-root',
@@ -11,9 +9,7 @@ import { ThreeSceneComponent } from './three-scene/three-scene.component';
   imports: [
     RouterOutlet,
     CustomCursorComponent, 
-    BackgroundCanvasComponent,
-    NavbarComponent,
-    ThreeSceneComponent
+    NavbarComponent
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'

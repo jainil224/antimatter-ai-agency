@@ -1,3 +1,8 @@
+.work-hero {
+  min-height: 200vh;
+  position: relative;
+}
+
 .page-container {
   min-height: 100vh;
   padding: 180px 8vw 100px;
@@ -9,6 +14,8 @@
 
   .header-content {
     max-width: 800px;
+    margin-left: 45%;
+    padding-right: 5%;
     
     .page-title {
       font-size: clamp(4rem, 8vw, 7rem);
@@ -31,10 +38,12 @@
   }
 
   .projects-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 40px;
-    width: 100%;
+    width: 55%;
+    margin-left: 45%;
+    padding-right: 5%;
 
     @media (max-width: 768px) {
       grid-template-columns: 1fr;

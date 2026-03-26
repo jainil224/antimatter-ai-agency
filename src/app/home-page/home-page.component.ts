@@ -2,6 +2,8 @@ import { Component, AfterViewInit, OnDestroy } from '@angular/core';
 import { HeroSectionComponent } from '../hero-section/hero-section.component';
 import { ServicesSectionComponent } from '../services-section/services-section.component';
 import { CaseStudiesSectionComponent } from '../case-studies-section/case-studies-section.component';
+import { ThreeSceneComponent } from '../three-scene/three-scene.component';
+import { BackgroundCanvasComponent } from '../background-canvas/background-canvas.component';
 import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
 
@@ -13,7 +15,9 @@ gsap.registerPlugin(ScrollTrigger);
   imports: [
     HeroSectionComponent,
     ServicesSectionComponent,
-    CaseStudiesSectionComponent
+    CaseStudiesSectionComponent,
+    ThreeSceneComponent,
+    BackgroundCanvasComponent
   ],
   templateUrl: './home-page.component.html',
   styleUrl: './home-page.component.scss'

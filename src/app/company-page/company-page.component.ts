@@ -1,10 +1,12 @@
 import { Component, AfterViewInit } from '@angular/core';
 import gsap from 'gsap';
+import { ThreeSceneComponent } from '../three-scene/three-scene.component';
+import { BackgroundCanvasComponent } from '../background-canvas/background-canvas.component';
 
 @Component({
   selector: 'app-company-page',
   standalone: true,
-  imports: [],
+  imports: [ThreeSceneComponent, BackgroundCanvasComponent],
   templateUrl: './company-page.component.html',
   styleUrl: './company-page.component.scss'
 })

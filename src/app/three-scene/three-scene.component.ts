@@ -40,10 +40,22 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   // STATE
   private morphTarget = 0;
   private morphSmooth = 0;
-  private ptsPosTarget = 2.8;
+  public ptsPosTarget = 2.8;
   private ptsPosSmooth = 2.8;
-  public blastProgress = 0; // Managed externally or via global scroll sync
+  public blastProgress = 0;
   private blastSmooth = 0;
+  public dnaRotation = 0;
+  private dnaRotationSmooth = 0;
+  // Scroll parallax state (driven from WorkPageComponent via window.threeSceneState)
+  public scrollRotationOffsetTarget = 0;
+  private scrollRotationOffsetSmooth = 0;
+  public posYTarget = 0;
+  private posYSmooth = 0;
+  public scaleTarget = 0.78;
+  private scaleSmooth = 0.78;
+  public enableMouseParallax = false;
+  // Per-frame rotation accumulator (replaces elapsed * constant)
+  private frameRotation = 0;
   private mouse = new THREE.Vector2(-10, -10);
 
   public scrollShapeTarget = 0;
@@ -79,7 +91,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   @HostListener('window:mousemove', ['$event'])
   onMouseMove(e: MouseEvent) {
     this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-    this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    this.mouse.y = -(e.clientY / window.innerHe ight) * 2 + 1;
   }
 
   @HostListener('window:resize')
@@ -322,8 +334,42 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.blastSmooth = this.lerp(this.blastSmooth, this.blastProgress, 0.06);
     this.mat.uniforms['uBlast'].value = this.blastSmooth;
 
+    // 1. Y-axis auto rotation — 0.003 radians per frame (constant clockwise spin)
+    this.frameRotation += 0.003;
+
+    // 2. Smooth the scroll-driven extra rotation offset
+    this.scrollRotationOffsetSmooth = this.lerp(
+      this.scrollRotationOffsetSmooth,
+      this.scrollRotationOffsetTarget,
+      0.05
+    );
+
+    // Combine: base frame spin + smoothed scroll boost
+    this.pts.rotation.y = this.frameRotation + this.scrollRotationOffsetSmooth * 0.01
+      + this.scrollRotationOffsetSmooth; // full scroll contribution
+
+    // 3. Horizontal position (left/right shift per page)
     this.ptsPosSmooth = this.lerp(this.ptsPosSmooth, this.ptsPosTarget, 0.05);
-    this.pts.position.x = this.ptsPosSmooth;
+
+    // 4. Mouse parallax depth effect (only on Work page when enabled)
+    if (this.enableMouseParallax) {
+      this.pts.position.x = this.lerp(this.pts.position.x, this.ptsPosSmooth + this.mouse.x * 0.5, 0.05);
+    } else {
+      this.pts.position.x = this.ptsPosSmooth;
+    }
+
+    // 5. Scroll-driven Y position (DNA moves up as user scrolls)
+    this.posYSmooth = this.lerp(this.posYSmooth, this.posYTarget, 0.08);
+    this.pts.position.y = this.posYSmooth;
+    if (this.enableMouseParallax) {
+      this.pts.position.y = this.lerp(this.pts.position.y, this.posYSmooth + (-this.mouse.y * 0.3), 0.05);
+    }
+
+    // 6. Scroll-driven scale + subtle breathing pulse
+    this.scaleSmooth = this.lerp(this.scaleSmooth, this.scaleTarget, 0.08);
+    const breathePulse = Math.sin(elapsed * 2.0) * 0.04;
+    const finalScale = this.scaleSmooth + breathePulse;
+    this.pts.scale.set(finalScale, finalScale, finalScale);
 
     this.camera.position.x = this.mouse.x * 0.3;
     this.camera.position.y = -this.mouse.y * 0.3;
