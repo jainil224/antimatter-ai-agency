@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone, HostListener, Inject, PLATFORM_ID } from '@angular/core';
+﻿import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone, HostListener, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import * as THREE from 'three';
 import { ThreeService } from '../three.service';
@@ -91,7 +91,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   @HostListener('window:mousemove', ['$event'])
   onMouseMove(e: MouseEvent) {
     this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-    this.mouse.y = -(e.clientY / window.innerHe ight) * 2 + 1;
+    this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
   }
 
   @HostListener('window:resize')
@@ -334,7 +334,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.blastSmooth = this.lerp(this.blastSmooth, this.blastProgress, 0.06);
     this.mat.uniforms['uBlast'].value = this.blastSmooth;
 
-    // 1. Y-axis auto rotation — 0.003 radians per frame (constant clockwise spin)
+    // 1. Y-axis auto rotation â€” 0.003 radians per frame (constant clockwise spin)
     this.frameRotation += 0.003;
 
     // 2. Smooth the scroll-driven extra rotation offset
@@ -376,7 +376,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.camera.lookAt(0, 0, 0);
 
     const activeTarget = this.cardHovered !== -1 ? this.cardHovered : this.scrollShapeTarget;
-    // Single fast lerp — ease3 is applied at the bi/lam step below
+    // Single fast lerp â€” ease3 is applied at the bi/lam step below
     this.morphSmooth = this.lerp(this.morphSmooth, activeTarget, 0.06);
 
     // Bounded index interpolation
@@ -434,3 +434,4 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
   }
 }
+
