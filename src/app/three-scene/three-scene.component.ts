@@ -467,12 +467,36 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
         const r = Math.random();
         let px, py, pz;
         
-        if (r < 0.6) {
-          // Text inside boxes & HEAD text (uniform density across all lit pixels)
+        if (r < 0.30) {
+          // 30% Text inside boxes & HEAD text
           const p = textLitPoints[Math.floor(Math.random() * textLitPoints.length)];
-          px = p.x; py = p.y; pz = 0;
-        } else if (r < 0.85) {
-          // Wireframe boxes
+          px = p.x + (Math.random() - 0.5) * 0.02;
+          py = p.y + (Math.random() - 0.5) * 0.02;
+          pz = (Math.random() - 0.5) * 0.05; // tiny fuzz to prevent perfect stacking blowout
+        } else if (r < 0.35) {
+          // 5% Arrows between boxes
+          const arrowIdx = Math.floor(Math.random() * (numCells - 1));
+          const cellXOffset = (arrowIdx - (numCells - 1) / 2) * spacing;
+          
+          const gapStart = cellXOffset + size/2 + 0.1;
+          const gapEnd = cellXOffset + spacing - size/2 - 0.1;
+          
+          const arrowPart = Math.random();
+          if (arrowPart < 0.6) {
+            px = gapStart + Math.random() * (gapEnd - gapStart);
+            py = 0; pz = 0;
+          } else {
+            let u = Math.random(), v = Math.random();
+            if (u + v > 1) { u = 1 - u; v = 1 - v; }
+            px = gapEnd + u * (-0.2) + v * (-0.2);
+            py = u * 0.15 + v * (-0.15);
+            pz = 0;
+          }
+          px += (Math.random() - 0.5) * 0.02;
+          py += (Math.random() - 0.5) * 0.02;
+          pz += (Math.random() - 0.5) * 0.05;
+        } else if (r < 0.80) {
+          // 45% Wireframe boxes
           const cell = Math.floor(Math.random() * numCells);
           const edge = Math.floor(Math.random() * 12);
           px = (Math.random() - 0.5) * size;
@@ -495,29 +519,14 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
           const cellXOffset = (cell - (numCells - 1) / 2) * spacing;
           px += cellXOffset;
         } else {
-          // Arrows between boxes (solid filled arrows)
-          const arrowIdx = Math.floor(Math.random() * (numCells - 1));
-          const cellXOffset = (arrowIdx - (numCells - 1) / 2) * spacing;
-          
-          const gapStart = cellXOffset + size/2 + 0.1;
-          const gapEnd = cellXOffset + spacing - size/2 - 0.1;
-          
-          const arrowPart = Math.random();
-          if (arrowPart < 0.5) {
-            // Main line
-            px = gapStart + Math.random() * (gapEnd - gapStart);
-            py = 0; pz = 0;
-          } else {
-            // Solid filled triangle arrowhead
-            let u = Math.random(), v = Math.random();
-            if (u + v > 1) { u = 1 - u; v = 1 - v; }
-            px = gapEnd + u * (-0.2) + v * (-0.2);
-            py = u * 0.15 + v * (-0.15);
-            pz = 0;
-          }
+          // 20% Volume dust inside boxes to absorb extra particles elegantly
+          const cell = Math.floor(Math.random() * numCells);
+          const cellXOffset = (cell - (numCells - 1) / 2) * spacing;
+          px = cellXOffset + (Math.random() - 0.5) * size * 0.9;
+          py = (Math.random() - 0.5) * size * 0.9;
+          pz = (Math.random() - 0.5) * size * 0.9;
         }
         
-        // Slight scale up for better visibility
         pos[i * 3] = px * 1.1;
         pos[i * 3 + 1] = py * 1.1;
         pos[i * 3 + 2] = pz * 1.1;
