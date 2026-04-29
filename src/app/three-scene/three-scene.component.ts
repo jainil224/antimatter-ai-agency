@@ -1,4 +1,4 @@
-﻿import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone, HostListener, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone, HostListener, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import * as THREE from 'three';
 import { ThreeService } from '../three.service';
@@ -29,7 +29,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   private scene!: THREE.Scene;
   private animFrameId: number = 0;
 
-  private N = 6000;
+  private N = 15000;
   private pts!: THREE.Points;
   private mat!: THREE.ShaderMaterial;
   private geo!: THREE.BufferGeometry;
@@ -135,101 +135,392 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       return pos;
     };
 
-    // 2. Cube
-    const getCube = () => {
+    // 2. Array
+    const getArray = () => {
       const pos = new Float32Array(N * 3);
-      const size = 4;
-      for (let i = 0; i < N; i++) {
-        const face = Math.floor(Math.random() * 6);
-        let x = (Math.random() - 0.5) * size;
-        let y = (Math.random() - 0.5) * size;
-        let z = size / 2 + (Math.random() - 0.5) * 0.36;
-        let px = x, py = y, pz = z;
-        if (face === 1) pz = -z;
-        else if (face === 2) { px = z; pz = x; }
-        else if (face === 3) { px = -z; pz = x; }
-        else if (face === 4) { py = z; pz = y; }
-        else if (face === 5) { py = -z; pz = y; }
-        pos[i * 3] = px; pos[i * 3 + 1] = py; pos[i * 3 + 2] = pz;
-      }
-      return pos;
-    };
-
-    // 3. Code Text
-    const getCodeText = () => {
-      const pos = new Float32Array(N * 3);
+      const numCells = 10;
+      const size = 0.8;
+      const values = [10, 25, 40, 5, 8, 99, 12, 33, 41, 7];
+      
+      const textPointsByCell: {x: number, y: number}[][] = [];
       const cvs = document.createElement('canvas');
-      cvs.width = 400; cvs.height = 400;
+      cvs.width = 100; cvs.height = 180;
       const ctx = cvs.getContext('2d')!;
-      ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 400, 400);
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 200px "Courier New"';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('</>', 200, 200);
-      const imgData = ctx.getImageData(0, 0, 400, 400).data;
-      const lit = [];
-      for (let y = 0; y < 400; y += 2) {
-        for (let x = 0; x < 400; x += 2) {
-          if (imgData[(y * 400 + x) * 4] > 128) lit.push({ x: x - 200, y: -(y - 200) });
+      
+      for(let c=0; c<numCells; c++) {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 100, 180);
+        ctx.fillStyle = '#fff';
+        
+        // Draw INDEX
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText('INDEX', 50, 10);
+        
+        ctx.font = 'bold 22px Arial';
+        ctx.fillText(c.toString(), 50, 30);
+        
+        // Draw value
+        ctx.font = 'bold 45px Arial';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(values[c].toString(), 50, 120);
+        
+        const imgData = ctx.getImageData(0, 0, 100, 180).data;
+        const lit = [];
+        // Step by 1 for maximum resolution and solid text
+        for (let y = 0; y < 180; y += 1) {
+          for (let x = 0; x < 100; x += 1) {
+            if (imgData[(y * 100 + x) * 4] > 128) {
+              lit.push({ x: (x - 50) * 0.007, y: -(y - 120) * 0.007 });
+            }
+          }
         }
+        textPointsByCell.push(lit);
       }
+      
       for (let i = 0; i < N; i++) {
-        const p = lit[i % lit.length];
-        pos[i * 3] = (p.x + (Math.random() - 0.5) * 2) * 0.015;
-        pos[i * 3 + 1] = (p.y + (Math.random() - 0.5) * 2) * 0.015;
-        pos[i * 3 + 2] = ((Math.random() - 0.5) * 4) * 0.015;
-      }
-      return pos;
-    };
-
-    // 4. DNA
-    const getDna = () => {
-      const pos = new Float32Array(N * 3);
-      for (let i = 0; i < N; i++) {
-        let type = Math.random();
-        let y = (Math.random() - 0.5) * 7.5;
-        let angle = y * 2.0;
-        let r = 1.15;
-        let x = 0, z = 0;
-        if (type < 0.4) {
-          x = Math.sin(angle) * r; z = Math.cos(angle) * r;
-        } else if (type < 0.8) {
-          x = Math.sin(angle + Math.PI) * r; z = Math.cos(angle + Math.PI) * r;
+        const cell = Math.floor(Math.random() * numCells);
+        let px, py, pz;
+        
+        // 55% of particles for text, leaving 45% for super solid borders
+        if (Math.random() < 0.55) {
+          // Inner data (number and index)
+          const lit = textPointsByCell[cell];
+          if (lit && lit.length > 0) {
+            const p = lit[Math.floor(Math.random() * lit.length)];
+            px = p.x; // EXACT coordinate, no fuzz, for solid look
+            py = p.y;
+            pz = (Math.random() - 0.5) * 0.01; // extremely flat on z
+          } else {
+            px = 0; py = 0; pz = 0;
+          }
         } else {
-          let stepY = Math.round(y * 1.5) / 1.5;
-          let stepAngle = stepY * 2.0;
-          let lerp = Math.random();
-          let x1 = Math.sin(stepAngle) * r, z1 = Math.cos(stepAngle) * r;
-          let x2 = Math.sin(stepAngle + Math.PI) * r, z2 = Math.cos(stepAngle + Math.PI) * r;
-          x = x1 + (x2 - x1) * lerp; z = z1 + (z2 - z1) * lerp;
-          y = stepY;
-          x += (Math.random() - 0.5) * 0.1; y += (Math.random() - 0.5) * 0.1; z += (Math.random() - 0.5) * 0.1;
+          // Wireframe edges
+          const edge = Math.floor(Math.random() * 12);
+          px = (Math.random() - 0.5) * size;
+          py = (Math.random() - 0.5) * size;
+          pz = (Math.random() - 0.5) * size;
+          
+          if (edge === 0) { py = size/2; pz = size/2; }
+          else if (edge === 1) { py = size/2; pz = -size/2; }
+          else if (edge === 2) { py = -size/2; pz = size/2; }
+          else if (edge === 3) { py = -size/2; pz = -size/2; }
+          else if (edge === 4) { px = size/2; pz = size/2; }
+          else if (edge === 5) { px = size/2; pz = -size/2; }
+          else if (edge === 6) { px = -size/2; pz = size/2; }
+          else if (edge === 7) { px = -size/2; pz = -size/2; }
+          else if (edge === 8) { px = size/2; py = size/2; }
+          else if (edge === 9) { px = size/2; py = -size/2; }
+          else if (edge === 10) { px = -size/2; py = size/2; }
+          else if (edge === 11) { px = -size/2; py = -size/2; }
         }
-        if (type < 0.8) {
-          x += (Math.random() - 0.5) * 0.15; y += (Math.random() - 0.5) * 0.15; z += (Math.random() - 0.5) * 0.15;
-        }
-        pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
+        
+        const cellXOffset = (cell - (numCells - 1) / 2) * size;
+        pos[i * 3] = px + cellXOffset;
+        pos[i * 3 + 1] = py;
+        pos[i * 3 + 2] = pz;
       }
       return pos;
     };
 
-    // 5. Sparkle
-    const getSparkle = () => {
+    // 3. Stack
+    const getStack = () => {
       const pos = new Float32Array(N * 3);
+      const numCells = 6;
+      const sizeX = 1.6; // wider boxes
+      const sizeY = 0.7; // height
+      const sizeZ = 0.7; // depth
+      const values = [40, 55, 22, 30, 20, 10]; // top to bottom
+      
+      const textPointsByCell: {x: number, y: number}[][] = [];
+      const cvs = document.createElement('canvas');
+      cvs.width = 100; cvs.height = 100;
+      const ctx = cvs.getContext('2d')!;
+      
+      for(let c=0; c<numCells; c++) {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 100, 100);
+        ctx.fillStyle = '#fff';
+        
+        ctx.font = 'bold 50px Arial';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(values[c].toString(), 50, 50);
+        
+        const imgData = ctx.getImageData(0, 0, 100, 100).data;
+        const lit = [];
+        for (let y = 0; y < 100; y += 1) {
+          for (let x = 0; x < 100; x += 1) {
+            if (imgData[(y * 100 + x) * 4] > 128) {
+              lit.push({ x: (x - 50) * 0.008, y: -(y - 50) * 0.008 });
+            }
+          }
+        }
+        textPointsByCell.push(lit);
+      }
+      
       for (let i = 0; i < N; i++) {
-        const c = Math.random();
-        let bs = 2.0, ox = 0, oy = 0, oz = 0;
-        if (c > 0.6) { bs = 0.8; ox = 1.8; oy = 1.2; oz = -0.5; }
-        else if (c > 0.8) { bs = 0.5; ox = -1.5; oy = -1.5; oz = 0.8; }
-        const u = Math.random() * Math.PI * 2;
-        const v = Math.random() * Math.PI * 2;
-        const cu = Math.cos(u), su = Math.sin(u);
-        const cv = Math.cos(v), sv = Math.sin(v);
-        let x = Math.pow(Math.abs(cu), 3) * Math.sign(cu) * Math.pow(Math.abs(cv), 3) * Math.sign(cv);
-        let y = Math.pow(Math.abs(su), 3) * Math.sign(su) * Math.pow(Math.abs(cv), 3) * Math.sign(cv);
-        let z = Math.pow(Math.abs(sv), 3) * Math.sign(sv);
-        let r = Math.random() * bs;
-        pos[i * 3] = x * r + ox; pos[i * 3 + 1] = y * r + oy; pos[i * 3 + 2] = z * r + oz;
+        const cell = Math.floor(Math.random() * numCells);
+        let px, py, pz;
+        
+        if (Math.random() < 0.55) {
+          // Text
+          const lit = textPointsByCell[cell];
+          if (lit && lit.length > 0) {
+            const p = lit[Math.floor(Math.random() * lit.length)];
+            px = p.x;
+            py = p.y;
+            pz = (Math.random() - 0.5) * 0.01;
+          } else {
+            px = 0; py = 0; pz = 0;
+          }
+        } else {
+          // Wireframe edges of a box
+          const edge = Math.floor(Math.random() * 12);
+          px = (Math.random() - 0.5) * sizeX;
+          py = (Math.random() - 0.5) * sizeY;
+          pz = (Math.random() - 0.5) * sizeZ;
+          
+          if (edge === 0) { py = sizeY/2; pz = sizeZ/2; }
+          else if (edge === 1) { py = sizeY/2; pz = -sizeZ/2; }
+          else if (edge === 2) { py = -sizeY/2; pz = sizeZ/2; }
+          else if (edge === 3) { py = -sizeY/2; pz = -sizeZ/2; }
+          else if (edge === 4) { px = sizeX/2; pz = sizeZ/2; }
+          else if (edge === 5) { px = sizeX/2; pz = -sizeZ/2; }
+          else if (edge === 6) { px = -sizeX/2; pz = sizeZ/2; }
+          else if (edge === 7) { px = -sizeX/2; pz = -sizeZ/2; }
+          else if (edge === 8) { px = sizeX/2; py = sizeY/2; }
+          else if (edge === 9) { px = sizeX/2; py = -sizeY/2; }
+          else if (edge === 10) { px = -sizeX/2; py = sizeY/2; }
+          else if (edge === 11) { px = -sizeX/2; py = -sizeY/2; }
+        }
+        
+        const cellYOffset = ((numCells - 1) / 2 - cell) * sizeY;
+        pos[i * 3] = px;
+        pos[i * 3 + 1] = py + cellYOffset;
+        pos[i * 3 + 2] = pz;
+      }
+      return pos;
+    };
+
+    // 4. Binary Tree
+    const getTree = () => {
+      const pos = new Float32Array(N * 3);
+      
+      const nodes = [
+        { id: 0, val: 8, x: 0, y: 1.5 },
+        { id: 1, val: 4, x: -1.2, y: 0.5 },
+        { id: 2, val: 12, x: 1.2, y: 0.5 },
+        { id: 3, val: 2, x: -1.8, y: -0.5 },
+        { id: 4, val: 14, x: 1.8, y: -0.5 },
+        { id: 5, val: 1, x: -2.4, y: -1.5 },
+        { id: 6, val: 3, x: -1.2, y: -1.5 },
+        { id: 7, val: 13, x: 1.2, y: -1.5 },
+        { id: 8, val: 15, x: 2.4, y: -1.5 },
+      ];
+      const edges = [
+        [0, 1], [0, 2],
+        [1, 3],
+        [2, 4],
+        [3, 5], [3, 6],
+        [4, 7], [4, 8]
+      ];
+      
+      const textPointsByCell: {x: number, y: number}[][] = [];
+      const cvs = document.createElement('canvas');
+      cvs.width = 100; cvs.height = 100;
+      const ctx = cvs.getContext('2d')!;
+      
+      for(let i=0; i<nodes.length; i++) {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 100, 100);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 50px Arial';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(nodes[i].val.toString(), 50, 50);
+        
+        const imgData = ctx.getImageData(0, 0, 100, 100).data;
+        const lit = [];
+        for (let y = 0; y < 100; y += 1) {
+          for (let x = 0; x < 100; x += 1) {
+            if (imgData[(y * 100 + x) * 4] > 128) {
+              lit.push({ x: (x - 50) * 0.005, y: -(y - 50) * 0.005 });
+            }
+          }
+        }
+        textPointsByCell.push(lit);
+      }
+      
+      const radius = 0.35;
+      
+      for (let i = 0; i < N; i++) {
+        let px, py, pz;
+        const r = Math.random();
+        
+        if (r < 0.6) {
+          // Text (60% of particles for max clarity)
+          const nodeIdx = Math.floor(Math.random() * nodes.length);
+          const n = nodes[nodeIdx];
+          const lit = textPointsByCell[nodeIdx];
+          if (lit && lit.length > 0) {
+            const p = lit[Math.floor(Math.random() * lit.length)];
+            px = n.x + p.x;
+            py = n.y + p.y;
+            pz = 0; // Flat Z for perfectly sharp text
+          } else {
+            px = n.x; py = n.y; pz = 0;
+          }
+        } else if (r < 0.8) {
+          // Wireframe Spheres (Globe-like with latitudes and longitudes)
+          const nodeIdx = Math.floor(Math.random() * nodes.length);
+          const n = nodes[nodeIdx];
+          
+          const isLatitude = Math.random() < 0.5;
+          let cx, cy, cz;
+          if (isLatitude) {
+             const lats = [-0.6, -0.3, 0, 0.3, 0.6]; // sin(phi)
+             const sinPhi = lats[Math.floor(Math.random() * lats.length)];
+             const cosPhi = Math.sqrt(1 - sinPhi * sinPhi);
+             const theta = Math.random() * Math.PI * 2;
+             cx = cosPhi * Math.cos(theta) * radius;
+             cy = sinPhi * radius;
+             cz = cosPhi * Math.sin(theta) * radius;
+          } else {
+             const numLong = 8;
+             const lonIdx = Math.floor(Math.random() * numLong);
+             const theta = (lonIdx / numLong) * Math.PI;
+             const phi = Math.random() * Math.PI * 2;
+             const circleX = Math.cos(phi) * radius;
+             const circleY = Math.sin(phi) * radius;
+             cx = circleX * Math.cos(theta);
+             cy = circleY;
+             cz = -circleX * Math.sin(theta);
+          }
+          
+          px = n.x + cx;
+          py = n.y + cy;
+          pz = cz;
+        } else {
+          // Edges (solid lines connecting spheres)
+          const edgeIdx = Math.floor(Math.random() * edges.length);
+          const e = edges[edgeIdx];
+          const n1 = nodes[e[0]];
+          const n2 = nodes[e[1]];
+          
+          const dx = n2.x - n1.x;
+          const dy = n2.y - n1.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          
+          const tStart = radius / dist;
+          const tEnd = 1.0 - (radius / dist);
+          
+          const t = tStart + Math.random() * (tEnd - tStart);
+          
+          px = n1.x + dx * t;
+          py = n1.y + dy * t;
+          pz = 0; // lines are flat on Z
+        }
+        
+        pos[i * 3] = px * 1.5;
+        pos[i * 3 + 1] = py * 1.5;
+        pos[i * 3 + 2] = pz * 1.5;
+      }
+      return pos;
+    };
+
+    // 5. LinkedList
+    const getLinkedList = () => {
+      const pos = new Float32Array(N * 3);
+      const numCells = 6;
+      const size = 0.9;
+      const spacing = 1.4;
+      const values = [40, 39, 86, 48, 21, 10];
+      
+      const textLitPoints: {x: number, y: number}[] = [];
+      const cvs = document.createElement('canvas');
+      cvs.width = 150; cvs.height = 200;
+      const ctx = cvs.getContext('2d')!;
+      
+      for(let c=0; c<numCells; c++) {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 150, 200);
+        ctx.fillStyle = '#fff';
+        
+        if (c === 0) {
+          ctx.font = 'bold 24px Arial';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+          ctx.fillText('HEAD', 75, 10);
+        }
+        
+        ctx.font = 'bold 50px Arial';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(values[c].toString(), 75, 120);
+        
+        const imgData = ctx.getImageData(0, 0, 150, 200).data;
+        const cellXOffset = (c - (numCells - 1) / 2) * spacing;
+        
+        for (let y = 0; y < 200; y += 1) {
+          for (let x = 0; x < 150; x += 1) {
+            if (imgData[(y * 150 + x) * 4] > 128) {
+              textLitPoints.push({ x: (x - 75) * 0.007 + cellXOffset, y: -(y - 120) * 0.007 });
+            }
+          }
+        }
+      }
+      
+      for (let i = 0; i < N; i++) {
+        const r = Math.random();
+        let px, py, pz;
+        
+        if (r < 0.6) {
+          // Text inside boxes & HEAD text (uniform density across all lit pixels)
+          const p = textLitPoints[Math.floor(Math.random() * textLitPoints.length)];
+          px = p.x; py = p.y; pz = 0;
+        } else if (r < 0.85) {
+          // Wireframe boxes
+          const cell = Math.floor(Math.random() * numCells);
+          const edge = Math.floor(Math.random() * 12);
+          px = (Math.random() - 0.5) * size;
+          py = (Math.random() - 0.5) * size;
+          pz = (Math.random() - 0.5) * size;
+          
+          if (edge === 0) { py = size/2; pz = size/2; }
+          else if (edge === 1) { py = size/2; pz = -size/2; }
+          else if (edge === 2) { py = -size/2; pz = size/2; }
+          else if (edge === 3) { py = -size/2; pz = -size/2; }
+          else if (edge === 4) { px = size/2; pz = size/2; }
+          else if (edge === 5) { px = size/2; pz = -size/2; }
+          else if (edge === 6) { px = -size/2; pz = size/2; }
+          else if (edge === 7) { px = -size/2; pz = -size/2; }
+          else if (edge === 8) { px = size/2; py = size/2; }
+          else if (edge === 9) { px = size/2; py = -size/2; }
+          else if (edge === 10) { px = -size/2; py = size/2; }
+          else if (edge === 11) { px = -size/2; py = -size/2; }
+          
+          const cellXOffset = (cell - (numCells - 1) / 2) * spacing;
+          px += cellXOffset;
+        } else {
+          // Arrows between boxes (solid filled arrows)
+          const arrowIdx = Math.floor(Math.random() * (numCells - 1));
+          const cellXOffset = (arrowIdx - (numCells - 1) / 2) * spacing;
+          
+          const gapStart = cellXOffset + size/2 + 0.1;
+          const gapEnd = cellXOffset + spacing - size/2 - 0.1;
+          
+          const arrowPart = Math.random();
+          if (arrowPart < 0.5) {
+            // Main line
+            px = gapStart + Math.random() * (gapEnd - gapStart);
+            py = 0; pz = 0;
+          } else {
+            // Solid filled triangle arrowhead
+            let u = Math.random(), v = Math.random();
+            if (u + v > 1) { u = 1 - u; v = 1 - v; }
+            px = gapEnd + u * (-0.2) + v * (-0.2);
+            py = u * 0.15 + v * (-0.15);
+            pz = 0;
+          }
+        }
+        
+        // Slight scale up for better visibility
+        pos[i * 3] = px * 1.1;
+        pos[i * 3 + 1] = py * 1.1;
+        pos[i * 3 + 2] = pz * 1.1;
       }
       return pos;
     };
@@ -248,7 +539,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       return pos;
     };
 
-    this.shapes = [getSphere(), getCube(), getCodeText(), getDna(), getSparkle(), getBlob(), getSphere()];
+    this.shapes = [getSphere(), getArray(), getStack(), getTree(), getLinkedList(), getBlob(), getSphere()];
 
     this.blastDir = new Float32Array(N * 3);
     for (let i = 0; i < N; i++) {
@@ -334,8 +625,21 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.blastSmooth = this.lerp(this.blastSmooth, this.blastProgress, 0.06);
     this.mat.uniforms['uBlast'].value = this.blastSmooth;
 
-    // 1. Y-axis auto rotation â€” 0.003 radians per frame (constant clockwise spin)
-    this.frameRotation += 0.003;
+    // 1. Y-axis auto rotation
+    // Slow down and snap to face forward (nearest multiple of 2*PI) when shape is the Array (1), Stack (2), Tree (3), or LinkedList (4)
+    let arrayness1 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 1.0));
+    let arrayness2 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 2.0));
+    let arrayness3 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 3.0));
+    let arrayness4 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 4.0));
+    let staticness = Math.max(arrayness1, arrayness2, arrayness3, arrayness4);
+    
+    if (staticness > 0.01) {
+      const nearestMultiple = Math.round(this.frameRotation / (Math.PI * 2)) * (Math.PI * 2);
+      this.frameRotation = this.lerp(this.frameRotation, nearestMultiple, 0.08 * staticness);
+      this.frameRotation += 0.003 * (1.0 - staticness);
+    } else {
+      this.frameRotation += 0.003;
+    }
 
     // 2. Smooth the scroll-driven extra rotation offset
     this.scrollRotationOffsetSmooth = this.lerp(
