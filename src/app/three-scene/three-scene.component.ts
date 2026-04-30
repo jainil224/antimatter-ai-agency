@@ -35,6 +35,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   private geo!: THREE.BufferGeometry;
 
   private shapes: Float32Array[] = [];
+  private highlights: Float32Array[] = [];
   private blastDir!: Float32Array;
 
   // STATE
@@ -548,7 +549,112 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       return pos;
     };
 
-    this.shapes = [getSphere(), getArray(), getStack(), getTree(), getLinkedList(), getBlob(), getSphere()];
+    const getQueue = () => {
+      const pos = new Float32Array(N * 3);
+      const hlt = new Float32Array(N);
+      const numCells = 7;
+      const size = 0.8;
+      const spacing = 1.1;
+      const values = [10, 12, 15, 20, 16, 20, 25];
+      
+      const textPoints: {x: number, y: number, highlight: boolean}[] = [];
+      const cvs = document.createElement('canvas');
+      cvs.width = 150; cvs.height = 150;
+      const ctx = cvs.getContext('2d')!;
+      
+      // Labels: FRONT and REAR
+      const drawText = (txt: string, xOff: number) => {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 150, 150);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 30px Arial';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(txt, 75, 75);
+        const imgData = ctx.getImageData(0, 0, 150, 150).data;
+        for (let y = 0; y < 150; y += 2) {
+          for (let x = 0; x < 150; x += 2) {
+            if (imgData[(y * 150 + x) * 4] > 128) {
+              textPoints.push({ x: (x - 75) * 0.008 + xOff, y: -(y - 75) * 0.008, highlight: true });
+            }
+          }
+        }
+      };
+      
+      drawText('FRONT', -((numCells - 1) / 2 + 1.2) * spacing);
+      drawText('REAR', ((numCells - 1) / 2 + 1.2) * spacing);
+      
+      // Numbers
+      for(let c=0; c<numCells; c++) {
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 150, 150);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 60px Arial';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(values[c].toString(), 75, 75);
+        const imgData = ctx.getImageData(0, 0, 150, 150).data;
+        const cellX = (c - (numCells - 1) / 2) * spacing;
+        for (let y = 0; y < 150; y += 2) {
+          for (let x = 0; x < 150; x += 2) {
+            if (imgData[(y * 150 + x) * 4] > 128) {
+              textPoints.push({ x: (x - 75) * 0.008 + cellX, y: -(y - 75) * 0.008, highlight: true });
+            }
+          }
+        }
+      }
+      
+      for (let i = 0; i < N; i++) {
+        const r = Math.random();
+        let px, py, pz, h = 0;
+        
+        if (r < 0.4 && textPoints.length > 0) {
+          const p = textPoints[Math.floor(Math.random() * textPoints.length)];
+          px = p.x; py = p.y; pz = 0;
+          h = 1.0;
+        } else {
+          // Octahedron cells
+          const cell = Math.floor(Math.random() * numCells);
+          const cellX = (cell - (numCells - 1) / 2) * spacing;
+          
+          // Octahedron vertices: (±1,0,0), (0,±1,0), (0,0,±1)
+          const vertices = [
+            [1,0,0], [-1,0,0], [0,1,0], [0,-1,0], [0,0,1], [0,0,-1]
+          ];
+          const edges = [
+            [0,2],[0,3],[0,4],[0,5],
+            [1,2],[1,3],[1,4],[1,5],
+            [2,4],[4,3],[3,5],[5,2]
+          ];
+          
+          const edgeIdx = Math.floor(Math.random() * edges.length);
+          const v1 = vertices[edges[edgeIdx][0]];
+          const v2 = vertices[edges[edgeIdx][1]];
+          const t = Math.random();
+          const s = size * 0.6;
+          px = cellX + (v1[0] + (v2[0] - v1[0]) * t) * s;
+          py = (v1[1] + (v2[1] - v1[1]) * t) * s;
+          pz = (v1[2] + (v2[2] - v1[2]) * t) * s;
+        }
+        
+        pos[i * 3] = px;
+        pos[i * 3 + 1] = py;
+        pos[i * 3 + 2] = pz;
+        hlt[i] = h;
+      }
+      return { pos, hlt };
+    };
+
+    const s0 = getSphere();
+    const s1 = getArray();
+    const s2 = getStack();
+    const s3 = getTree();
+    const s4 = getLinkedList();
+    const s5 = getQueue();
+    const s6 = getBlob();
+    const s7 = getSphere();
+
+    this.shapes = [s0, s1, s2, s3, s4, s5.pos, s6, s7];
+    
+    // Fill highlights (only Queue has them for now, others default to 0)
+    const emptyHlt = new Float32Array(N);
+    this.highlights = [emptyHlt, emptyHlt, emptyHlt, emptyHlt, emptyHlt, s5.hlt, emptyHlt, emptyHlt];
 
     this.blastDir = new Float32Array(N * 3);
     for (let i = 0; i < N; i++) {
@@ -573,14 +679,18 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     this.geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
     this.geo.setAttribute('aRnd', new THREE.BufferAttribute(aRnd, 1));
+    this.geo.setAttribute('aHighlight', new THREE.BufferAttribute(new Float32Array(this.N), 1));
 
     const vertexShader = `
       attribute float size;
       attribute float aRnd;
+      attribute float aHighlight;
       varying float vOp;
+      varying float vHighlight;
       uniform float uTime;
       void main() {
         vOp = 0.45 + 0.55 * sin(uTime * 1.8 + aRnd * 9.0);
+        vHighlight = aHighlight;
         vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
         gl_PointSize = size * (32.0 / -mvPosition.z);
         gl_Position = projectionMatrix * mvPosition;
@@ -592,13 +702,16 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       uniform vec3 uGlow;
       uniform float uBlast;
       varying float vOp;
+      varying float vHighlight;
       void main() {
         vec2 pt = gl_PointCoord - vec2(0.5);
         float d = length(pt);
         if (d > 0.5) discard;
         float core = exp(-d * 7.0);
         float glow = exp(-d * 3.0) * 0.5;
-        vec3 col = mix(uGlow, uColor, core);
+        vec3 highlightCol = vec3(0.98, 0.8, 0.08); // #FACC15 Yellow
+        vec3 baseCol = mix(uGlow, uColor, core);
+        vec3 col = mix(baseCol, highlightCol, vHighlight);
         float blastFade = mix(1.0, 0.35, uBlast);
         gl_FragColor = vec4(col, (core + glow) * vOp * blastFade);
       }
@@ -640,7 +753,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     let arrayness2 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 2.0));
     let arrayness3 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 3.0));
     let arrayness4 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 4.0));
-    let staticness = Math.max(arrayness1, arrayness2, arrayness3, arrayness4);
+    let arrayness5 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 5.0));
+    let staticness = Math.max(arrayness1, arrayness2, arrayness3, arrayness4, arrayness5);
     
     if (staticness > 0.01) {
       const nearestMultiple = Math.round(this.frameRotation / (Math.PI * 2)) * (Math.PI * 2);
@@ -734,9 +848,17 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       positions[i * 3] = this.lerp(positions[i * 3], tx, 0.14);
       positions[i * 3 + 1] = this.lerp(positions[i * 3 + 1], ty, 0.14);
       positions[i * 3 + 2] = this.lerp(positions[i * 3 + 2], tz, 0.14);
+      
+      // Update Highlights
+      const h1 = this.highlights[bi][i];
+      const h2 = this.highlights[ni][i];
+      const targetH = this.lerp(h1, h2, lam);
+      const highlights = this.geo.attributes['aHighlight'].array as Float32Array;
+      highlights[i] = this.lerp(highlights[i], targetH, 0.14);
     }
 
     this.geo.attributes['position'].needsUpdate = true;
+    this.geo.attributes['aHighlight'].needsUpdate = true;
     this.renderer.render(this.scene, this.camera);
 
     this.animFrameId = requestAnimationFrame((t) => this.animate(t));

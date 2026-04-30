@@ -53,10 +53,10 @@ export class ServicesSectionComponent {
     },
     {
       num: '05',
-      title: 'AI Development',
-      desc: 'LLM Fine-tuning & Agents, RAG & Knowledge Bases, Computer Vision & NLP, AI-powered Automation',
-      services: ['LLM Fine-tuning & Agents', 'RAG & Knowledge Bases', 'Computer Vision & NLP', 'AI-powered Automation'],
-      tools: ['OpenAI', 'LangChain', 'Pinecone', 'PyTorch'],
+      title: 'Queue',
+      desc: 'First-In-First-Out (FIFO) Data Structure, Enqueue & Dequeue Operations, Linear Data Management, Sequential Processing',
+      services: ['FIFO Structure', 'Enqueue Operation', 'Dequeue Operation', 'Peek & Search', 'Circular Queue', 'Priority Queue'],
+      tools: ['Arrays', 'Linked Lists', 'Heaps', 'Processing'],
       shape: 5,
       shadowInset: 'inset 0 -140px 140px -70px rgba(255, 180, 0, 0.2)',
       shadowOuter: '0 0 40px rgba(255, 180, 0, 0.15)'
