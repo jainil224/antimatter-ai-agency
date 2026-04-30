@@ -61,6 +61,9 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
   public scrollShapeTarget = 0;
   public interactiveCell = -1; // -1 means no highlight
+  public activeHighlightColor = new THREE.Color(0xFACC15); 
+  public activeCellOpacity = 1.0;
+  public activeCellScale = 1.0;
   private lastScrollShapeTarget = 0;
   private scrollActiveFrames = 0;
   private cardHovered = -1;
@@ -720,7 +723,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.highlights = [emptyHlt, s1.hlt, s2.hlt, s3.hlt, s4.hlt, s5.hlt, s6.hlt, s7.hlt];
     
     // Store cell indices for the interactive array (shape 7)
-    (this as any).cellData = [emptyCells, emptyCells, emptyCells, emptyCells, emptyCells, emptyCells, emptyCells, s7.cellIdxs];
+    (this as any).cellData = [emptyCells, emptyCells, s2.idx, emptyCells, emptyCells, emptyCells, emptyCells, s7.cellIdxs];
 
     this.blastDir = new Float32Array(N * 3);
     for (let i = 0; i < N; i++) {
@@ -757,11 +760,23 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       varying float vHighlight;
       varying float vCellIdx;
       uniform float uTime;
+      uniform float uActiveCell;
+      uniform float uActiveCellScale;
       void main() {
         vOp = 0.45 + 0.55 * sin(uTime * 1.8 + aRnd * 9.0);
         vHighlight = aHighlight;
         vCellIdx = aCellIndex;
-        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        
+        vec3 pos = position;
+        // Scale effect for the active cell (e.g. during Push/Pop)
+        if (uActiveCell >= 0.0 && abs(vCellIdx - uActiveCell) < 0.1) {
+          float cellY = (2.5 - vCellIdx) * 0.7; // Derived from getStack logic
+          pos.y -= cellY;
+          pos *= uActiveCellScale;
+          pos.y += cellY;
+        }
+        
+        vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
         gl_PointSize = size * (32.0 / -mvPosition.z);
         gl_Position = projectionMatrix * mvPosition;
       }
@@ -770,8 +785,10 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     const fragmentShader = `
       uniform vec3 uColor;
       uniform vec3 uGlow;
+      uniform vec3 uHighlightColor;
       uniform float uBlast;
       uniform float uActiveCell;
+      uniform float uActiveCellOpacity;
       varying float vOp;
       varying float vHighlight;
       varying float vCellIdx;
@@ -784,7 +801,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
         float core = smoothstep(0.5, 0.1, d); 
         float glow = exp(-d * 6.0) * 0.4;
         
-        vec3 highlightCol = vec3(0.98, 0.8, 0.08); // #FACC15 Yellow
+        vec3 highlightCol = uHighlightColor;
         
         // Interactive cell highlight logic
         float isCellActive = (uActiveCell >= 0.0 && abs(vCellIdx - uActiveCell) < 0.1) ? 1.0 : 0.0;
@@ -793,7 +810,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
         vec3 col = mix(baseCol, highlightCol, max(vHighlight, isCellActive));
         
         float blastFade = mix(1.0, 0.35, uBlast);
-        float alpha = (core + glow) * vOp * blastFade;
+        float cellFade = (uActiveCell >= 0.0 && abs(vCellIdx - uActiveCell) < 0.1) ? uActiveCellOpacity : 1.0;
+        float alpha = (core + glow) * vOp * blastFade * cellFade;
         gl_FragColor = vec4(col, alpha);
       }
     `;
@@ -805,8 +823,11 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
         uTime: { value: 0 },
         uColor: { value: new THREE.Color(0xffffff) },
         uGlow: { value: new THREE.Color(0x06B6D4) },
+        uHighlightColor: { value: new THREE.Color(0xFACC15) },
         uBlast: { value: 0 },
-        uActiveCell: { value: -1.0 }
+        uActiveCell: { value: -1.0 },
+        uActiveCellOpacity: { value: 1.0 },
+        uActiveCellScale: { value: 1.0 }
       },
       transparent: true,
       depthWrite: false,
@@ -829,6 +850,9 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.blastSmooth = this.lerp(this.blastSmooth, this.blastProgress, 0.06);
     this.mat.uniforms['uBlast'].value = this.blastSmooth;
     this.mat.uniforms['uActiveCell'].value = this.interactiveCell;
+    this.mat.uniforms['uHighlightColor'].value = this.activeHighlightColor;
+    this.mat.uniforms['uActiveCellOpacity'].value = this.activeCellOpacity;
+    this.mat.uniforms['uActiveCellScale'].value = this.activeCellScale;
 
     // 1. Y-axis auto rotation
     // Slow down and snap to face forward (nearest multiple of 2*PI) when shape is the Array (1), Stack (2), Tree (3), LinkedList (4), or Interactive (7)

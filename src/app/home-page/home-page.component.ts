@@ -266,24 +266,49 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                 const step = Math.floor(localP * 12);
                 this.activeStep = step;
 
-                if (step <= 3) {
+                if (step <= 2) {
                   this.activeOp = 'Push';
                   this.opDescription = 'Push: Adding element to the TOP.';
                   this.timeComplexity = 'O(1)'; this.spaceComplexity = 'O(1)';
                   this.opStatus = 'Pushing 10 to TOP';
-                  threeState.interactiveCell = 0; // Top cell
-                } else if (step <= 7) {
+                  
+                  const pPush = Math.min(1, step / 2.5);
+                  threeState.interactiveCell = 0;
+                  threeState.activeHighlightColor.setHex(0x22D3EE); 
+                  threeState.activeCellScale = 0.3 + 0.7 * pPush;
+                  threeState.activeCellOpacity = pPush;
+                } else if (step <= 5) {
                   this.activeOp = 'Pop';
                   this.opDescription = 'Pop: Removing element from TOP (LIFO).';
                   this.timeComplexity = 'O(1)'; this.spaceComplexity = 'O(1)';
                   this.opStatus = 'Popping TOP element';
+                  
+                  const pPop = Math.min(1, (step - 3) / 2.5);
                   threeState.interactiveCell = 0;
+                  threeState.activeHighlightColor.setHex(0xF87171); // Explicit Red for Pop
+                  threeState.activeCellScale = 1.0 - 0.4 * pPop;
+                  threeState.activeCellOpacity = 1.0 - pPop;
+                } else if (step <= 10) {
+                  this.activeOp = 'Search';
+                  this.opDescription = 'Search: Iterating from TOP to find a value.';
+                  this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(1)';
+                  const searchIdx = Math.min(3, step - 6);
+                  this.opStatus = `Searching block #${searchIdx}`;
+                  
+                  threeState.interactiveCell = searchIdx;
+                  threeState.activeHighlightColor.setHex(0xFACC15);
+                  threeState.activeCellScale = 1.05; // Subtle pop when searching
+                  threeState.activeCellOpacity = 1.0;
                 } else {
                   this.activeOp = 'Peek';
                   this.opDescription = 'Peek: Viewing the TOP element.';
                   this.timeComplexity = 'O(1)'; this.spaceComplexity = 'O(1)';
-                  this.opStatus = 'Peeking at TOP: 22';
+                  this.opStatus = 'Peeking at TOP: 40';
+                  
                   threeState.interactiveCell = 0;
+                  threeState.activeHighlightColor.setHex(0xA855F7);
+                  threeState.activeCellScale = 1.0;
+                  threeState.activeCellOpacity = 1.0;
                 }
               }
               this.cdr.detectChanges();
@@ -296,6 +321,16 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
 
       ScrollTrigger.refresh();
     }, 100);
+  }
+
+  public getStatusColor(): string {
+    switch (this.activeOp) {
+      case 'Push': return '#22D3EE';
+      case 'Pop': return '#F87171';
+      case 'Search': return '#FACC15';
+      case 'Peek': return '#A855F7';
+      default: return '#FACC15';
+    }
   }
 
   ngOnDestroy() {

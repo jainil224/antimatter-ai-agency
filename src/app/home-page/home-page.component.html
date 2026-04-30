@@ -62,8 +62,12 @@
                   <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> stack.pop()</div>
                 </div>
                 <div *ngSwitchCase="'Peek'">
-                  <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">peek</span>(stack):</div>
-                  <div class="line" [class.active]="activeStep >= 1"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> stack[-1]</div>
+                  <div class="line" [class.active]="activeStep === 11"><span>1</span> <span class="keyword">def</span> <span class="func">peek</span>(stack):</div>
+                  <div class="line" [class.active]="activeStep === 11"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> stack[-1]</div>
+                </div>
+                <div *ngSwitchCase="'Search'">
+                  <div class="line" [class.active]="activeStep >= 6 && activeStep <= 7"><span>1</span> <span class="keyword">for</span> item <span class="keyword">in</span> <span class="func">reversed</span>(stack):</div>
+                  <div class="line" [class.active]="activeStep >= 8 && activeStep <= 10"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> item == target: <span class="keyword">return</span> <span class="keyword">True</span></div>
                 </div>
               </ng-container>
             </ng-container>
@@ -82,7 +86,7 @@
         </div>
         <div class="stat-box glass">
           <span class="stat-label">STATUS</span>
-          <span class="stat-value" [style.color]="'#FACC15'">{{ opStatus }}</span>
+          <span class="stat-value" [style.color]="getStatusColor()">{{ opStatus }}</span>
         </div>
       </div>
     </div>
