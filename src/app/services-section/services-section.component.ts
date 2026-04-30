@@ -18,8 +18,8 @@ export class ServicesSectionComponent {
       services: ['UI/UX Design', 'Wireframing & Prototyping', 'Brand Identity', 'Design Systems', 'User Research', 'Testing'],
       tools: ['Figma', 'Framer', 'Maze', 'Notion'],
       shape: 1,
-      shadowInset: 'inset 0 -140px 140px -70px rgba(123, 94, 251, 0.2)',
-      shadowOuter: '0 0 40px rgba(123, 94, 251, 0.15)'
+      shadowInset: 'inset 0 -140px 140px -70px rgba(6, 182, 212, 0.2)',
+      shadowOuter: '0 0 40px rgba(6, 182, 212, 0.15)'
     },
     {
       num: '02',
@@ -28,8 +28,8 @@ export class ServicesSectionComponent {
       services: ['Frontend (React/Next.js)', 'Backend & API Engineering', 'Cloud Infrastructure & DevOps', 'Mobile Apps (iOS/Android)'],
       tools: ['React', 'Node', 'AWS', 'Docker', 'Vercel'],
       shape: 2,
-      shadowInset: 'inset 0 -140px 140px -70px rgba(75, 94, 252, 0.2)',
-      shadowOuter: '0 0 40px rgba(75, 94, 252, 0.15)'
+      shadowInset: 'inset 0 -140px 140px -70px rgba(56, 189, 248, 0.2)',
+      shadowOuter: '0 0 40px rgba(56, 189, 248, 0.15)'
     },
     {
       num: '03',

@@ -610,7 +610,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       uniforms: {
         uTime: { value: 0 },
         uColor: { value: new THREE.Color(0xffffff) },
-        uGlow: { value: new THREE.Color(0x7B5EFB) },
+        uGlow: { value: new THREE.Color(0x06B6D4) },
         uBlast: { value: 0 }
       },
       transparent: true,

@@ -56,7 +56,7 @@ export class BackgroundCanvasComponent implements AfterViewInit, OnDestroy {
     // Sine wave opacity (slow cycle)
     const opacity = 0.015 + Math.sin(time * 0.001) * 0.005;
 
-    this.ctx.strokeStyle = `rgba(255, 255, 255, ${Math.max(0, opacity)})`;
+    this.ctx.strokeStyle = `rgba(6, 182, 212, ${Math.max(0, opacity)})`;
     this.ctx.lineWidth = 1;
 
     this.ctx.beginPath();
