@@ -176,9 +176,9 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
         onUpdate: (self) => {
           if (threeState) {
             threeState.scrollShapeTarget = 7;
-            threeState.ptsPosTarget = -2.8; // Slightly more right
-            threeState.posYTarget = -0.4;   // Move down to align with content
-            threeState.scaleTarget = 0.95;  // Make it larger
+            threeState.ptsPosTarget = -4.2; // Move further left to avoid text overlap
+            threeState.posYTarget = -0.4;
+            threeState.scaleTarget = 0.95;
             
             const p = self.progress;
             

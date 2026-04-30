@@ -13,11 +13,11 @@
   background: transparent;
 }
 .interactive-content-container {
-  max-width: 1200px;
+  max-width: 1400px; // Slightly wider for more space
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 60px;
+  grid-template-columns: 1.2fr 0.8fr; // More room for the animation on the left
+  gap: 100px; // Wider gap
   align-items: center;
 }
 .animation-spacer {
