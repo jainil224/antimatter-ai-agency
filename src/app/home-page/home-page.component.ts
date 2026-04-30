@@ -1,9 +1,11 @@
 import { Component, AfterViewInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { HeroSectionComponent } from '../hero-section/hero-section.component';
 import { ServicesSectionComponent } from '../services-section/services-section.component';
 import { CaseStudiesSectionComponent } from '../case-studies-section/case-studies-section.component';
 import { ThreeSceneComponent } from '../three-scene/three-scene.component';
 import { BackgroundCanvasComponent } from '../background-canvas/background-canvas.component';
+import { InteractiveSectionComponent } from '../interactive-section/interactive-section.component';
 import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
 
@@ -13,16 +15,25 @@ gsap.registerPlugin(ScrollTrigger);
   selector: 'app-home-page',
   standalone: true,
   imports: [
+    CommonModule,
     HeroSectionComponent,
     ServicesSectionComponent,
     CaseStudiesSectionComponent,
     ThreeSceneComponent,
-    BackgroundCanvasComponent
+    BackgroundCanvasComponent,
+    InteractiveSectionComponent
   ],
   templateUrl: './home-page.component.html',
   styleUrl: './home-page.component.scss'
 })
 export class HomePageComponent implements AfterViewInit, OnDestroy {
+  public activeStep = 0;
+  public activeOp = 'Search';
+  public opDescription = 'Watch how data is accessed and manipulated in real-time as you scroll through the memory blocks.';
+  public timeComplexity = 'O(n)';
+  public spaceComplexity = 'O(1)';
+  public opStatus = 'Searching...';
+  
   private triggers: ScrollTrigger[] = [];
 
   ngAfterViewInit() {
@@ -153,6 +164,77 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
             threeState.ptsPosTarget = -4.5 + (4.5 * self.progress);
           }
         }
+      }));
+
+      // 6. Interactive Section simulation (3 Phases + Pinning)
+      this.triggers.push(ScrollTrigger.create({
+        trigger: '.interactive-section',
+        start: 'top top',
+        end: '+=200%', // Triple the scroll length for phases
+        pin: true,
+        scrub: true,
+        onUpdate: (self) => {
+          if (threeState) {
+            threeState.scrollShapeTarget = 7;
+            threeState.ptsPosTarget = -2.8; // Slightly more right
+            threeState.posYTarget = -0.4;   // Move down to align with content
+            threeState.scaleTarget = 0.95;  // Make it larger
+            
+            const p = self.progress;
+            
+            // Phase 0: Settle into position (0 - 15%)
+            if (p < 0.15) {
+              this.activeOp = 'Settling';
+              this.opDescription = 'Preparing memory for live simulation...';
+              this.opStatus = 'Standby';
+              threeState.interactiveCell = -1;
+              return;
+            }
+
+            // Remap 0.15-1.0 to 0.0-1.0 for the 3 operations
+            const activeP = (p - 0.15) / 0.85;
+
+            if (activeP < 0.33) {
+              // PHASE 1: SEARCH
+              this.activeOp = 'Search';
+              this.opDescription = 'Linear Search: Scanning each memory address until the target value is found.';
+              this.timeComplexity = 'O(n)';
+              this.spaceComplexity = 'O(1)';
+              
+              const localP = activeP / 0.33;
+              const step = Math.floor(localP * 11);
+              this.activeStep = step;
+              this.opStatus = 'Searching Index #' + (step - 1 >= 0 ? step - 1 : 0);
+              threeState.interactiveCell = step - 1;
+            } else if (activeP < 0.66) {
+              // PHASE 2: INSERTION
+              this.activeOp = 'Insertion';
+              this.opDescription = 'Insertion: Shifting elements to create space and allocating a new memory block.';
+              this.timeComplexity = 'O(n)';
+              this.spaceComplexity = 'O(1)';
+              
+              const localP = (activeP - 0.33) / 0.33;
+              this.activeStep = Math.floor(localP * 10);
+              const targetIdx = 4;
+              this.opStatus = 'Inserting at Index #' + targetIdx;
+              threeState.interactiveCell = targetIdx;
+            } else {
+              // PHASE 3: DELETION
+              this.activeOp = 'Deletion';
+              this.opDescription = 'Deletion: Removing an element and shifting subsequent items to maintain continuity.';
+              this.timeComplexity = 'O(n)';
+              this.spaceComplexity = 'O(1)';
+              
+              const localP = (activeP - 0.66) / 0.34;
+              this.activeStep = Math.floor(localP * 10);
+              const targetIdx = 2;
+              this.opStatus = 'Deleting Index #' + targetIdx;
+              threeState.interactiveCell = targetIdx;
+            }
+          }
+        },
+        onLeave: () => { if (threeState) threeState.interactiveCell = -1; },
+        onLeaveBack: () => { if (threeState) threeState.interactiveCell = -1; }
       }));
 
       ScrollTrigger.refresh();

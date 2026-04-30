@@ -3,5 +3,70 @@
 <div class="main-scroll-container">
   <app-hero-section></app-hero-section>
   <app-services-section></app-services-section>
+  
+  <section class="interactive-section" id="interactive-array">
+    <div class="interactive-content-container">
+      <!-- Empty div to push content to the right column -->
+      <div class="animation-spacer"></div>
+
+      <div class="interactive-main-content">
+        <div class="interactive-header">
+          <span class="interactive-label">LIVE SIMULATION</span>
+          <h2>Interactive Array <span>{{ activeOp }}</span></h2>
+          <p>{{ opDescription }}</p>
+        </div>
+
+        <div class="operation-card glass">
+          <div class="status-bar">
+            <div class="dot red"></div>
+            <div class="dot yellow"></div>
+            <div class="dot green"></div>
+            <span class="filename">array_ops.py</span>
+          </div>
+          <div class="code-view">
+            <ng-container [ngSwitch]="activeOp">
+              <!-- SEARCH OP -->
+              <div *ngSwitchCase="'Search'">
+                <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">search</span>(arr, target):</div>
+                <div class="line" [class.active]="activeStep >= 1 && activeStep <= 10"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">for</span> i <span class="keyword">in</span> <span class="func">range</span>(<span class="func">len</span>(arr)):</div>
+                <div class="line" [class.active]="activeStep > 0 && activeStep <= 10"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Accessing index [{{ activeStep - 1 >= 0 ? activeStep - 1 : 0 }}]</span></div>
+                <div class="line" [class.active]="activeStep === 11"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> arr[i] == target: <span class="keyword">return</span> i</div>
+              </div>
+              <!-- INSERT OP -->
+              <div *ngSwitchCase="'Insertion'">
+                <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">insert</span>(arr, idx, val):</div>
+                <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Shift elements to the right</span></div>
+                <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;arr.insert(idx, val)</div>
+                <div class="line" [class.active]="activeStep > 5"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> arr <span class="comment"># Array resized</span></div>
+              </div>
+              <!-- DELETE OP -->
+              <div *ngSwitchCase="'Deletion'">
+                <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">delete</span>(arr, idx):</div>
+                <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Remove and shift back</span></div>
+                <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">del</span> arr[idx]</div>
+                <div class="line" [class.active]="activeStep > 5"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> arr <span class="comment"># Memory freed</span></div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box glass">
+          <span class="stat-label">TIME COMPLEXITY</span>
+          <span class="stat-value">{{ timeComplexity }}</span>
+        </div>
+        <div class="stat-box glass">
+          <span class="stat-label">SPACE COMPLEXITY</span>
+          <span class="stat-value">{{ spaceComplexity }}</span>
+        </div>
+        <div class="stat-box glass">
+          <span class="stat-label">STATUS</span>
+          <span class="stat-value" [style.color]="'#FACC15'">{{ opStatus }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <app-case-studies-section></app-case-studies-section>
 </div>

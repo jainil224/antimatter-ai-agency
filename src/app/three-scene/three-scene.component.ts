@@ -29,7 +29,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   private scene!: THREE.Scene;
   private animFrameId: number = 0;
 
-  private N = 15000;
+  private N = 25000; // Increased from 15000 for higher detail
   private pts!: THREE.Points;
   private mat!: THREE.ShaderMaterial;
   private geo!: THREE.BufferGeometry;
@@ -60,6 +60,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   private mouse = new THREE.Vector2(-10, -10);
 
   public scrollShapeTarget = 0;
+  public interactiveCell = -1; // -1 means no highlight
   private lastScrollShapeTarget = 0;
   private scrollActiveFrames = 0;
   private cardHovered = -1;
@@ -148,27 +149,27 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       
       const textPointsByCell: {x: number, y: number}[] = [];
       const cvs = document.createElement('canvas');
-      cvs.width = 100; cvs.height = 180;
+      cvs.width = 300; cvs.height = 450; // Even higher resolution
       const ctx = cvs.getContext('2d')!;
       
       for(let c=0; c<numCells; c++) {
-        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 100, 180);
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 300, 450);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 16px Arial';
+        ctx.font = 'bold 36px monospace'; // Monospace is often sharper
         ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-        ctx.fillText('INDEX', 50, 10);
-        ctx.font = 'bold 22px Arial';
-        ctx.fillText(c.toString(), 50, 30);
-        ctx.font = 'bold 45px Arial';
+        ctx.fillText('INDEX', 150, 20);
+        ctx.font = 'bold 60px monospace';
+        ctx.fillText(c.toString(), 150, 70);
+        ctx.font = 'bold 110px monospace';
         ctx.textBaseline = 'middle';
-        ctx.fillText(values[c].toString(), 50, 120);
+        ctx.fillText(values[c].toString(), 150, 280);
         
-        const imgData = ctx.getImageData(0, 0, 100, 180).data;
+        const imgData = ctx.getImageData(0, 0, 300, 450).data;
         const cellXOffset = (c - (numCells - 1) / 2) * size;
-        for (let y = 0; y < 180; y += 1) {
-          for (let x = 0; x < 100; x += 1) {
-            if (imgData[(y * 100 + x) * 4] > 128) {
-              textPointsByCell.push({ x: (x - 50) * 0.007 + cellXOffset, y: -(y - 120) * 0.007 });
+        for (let y = 0; y < 450; y += 1) {
+          for (let x = 0; x < 300; x += 1) {
+            if (imgData[(y * 300 + x) * 4] > 128) {
+              textPointsByCell.push({ x: (x - 150) * 0.0025 + cellXOffset, y: -(y - 280) * 0.0025 });
             }
           }
         }
@@ -176,19 +177,23 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       
       for (let i = 0; i < N; i++) {
         const r = Math.random();
-        let px, py, pz, h = 0;
+        let px, py, pz, h = 0, cellIdx = -1;
         
-        if (r < 0.55 && textPointsByCell.length > 0) {
+        if (r < 0.8 && textPointsByCell.length > 0) { // Maximum density
           const p = textPointsByCell[Math.floor(Math.random() * textPointsByCell.length)];
           px = p.x; py = p.y; pz = 0;
           h = 1.0;
+          // Extract cell from x position roughly
+          cellIdx = Math.floor((px / size) + (numCells / 2));
         } else {
           const cell = Math.floor(Math.random() * numCells);
+          cellIdx = cell;
           const cellXOffset = (cell - (numCells - 1) / 2) * size;
           const edge = Math.floor(Math.random() * 12);
           px = (Math.random() - 0.5) * size;
           py = (Math.random() - 0.5) * size;
           pz = (Math.random() - 0.5) * size;
+          // (edge logic remains same)
           if (edge === 0) { py = size/2; pz = size/2; }
           else if (edge === 1) { py = size/2; pz = -size/2; }
           else if (edge === 2) { py = -size/2; pz = size/2; }
@@ -207,6 +212,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
         pos[i * 3 + 1] = py;
         pos[i * 3 + 2] = pz;
         hlt[i] = h;
+        // Store cellIdx in a custom way or attribute (I'll add another array for this)
       }
       return { pos, hlt };
     };
@@ -382,40 +388,55 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       
       const textPoints: {x: number, y: number}[] = [];
       const cvs = document.createElement('canvas');
-      cvs.width = 150; cvs.height = 200;
+      cvs.width = 400; cvs.height = 500; // Even higher resolution
       const ctx = cvs.getContext('2d')!;
       
       for(let c=0; c<numCells; c++) {
-        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 150, 200);
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 400, 500);
         ctx.fillStyle = '#fff';
-        if (c === 0) { ctx.font = 'bold 24px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText('HEAD', 75, 10); }
-        ctx.font = 'bold 50px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(values[c].toString(), 75, 120);
-        const imgData = ctx.getImageData(0, 0, 150, 200).data;
+        if (c === 0) { 
+          ctx.font = 'bold 50px monospace'; // Massive HEAD label
+          ctx.textAlign = 'center'; 
+          ctx.textBaseline = 'top'; 
+          ctx.fillText('HEAD', 200, 20); 
+        }
+        ctx.font = 'bold 150px monospace'; // Massive node values
+        ctx.textAlign = 'center'; 
+        ctx.textBaseline = 'middle'; 
+        ctx.fillText(values[c].toString(), 200, 280);
+        
+        const imgData = ctx.getImageData(0, 0, 400, 500).data;
         const cellXOffset = (c - (numCells - 1) / 2) * spacing;
-        for (let y = 0; y < 200; y += 1) {
-          for (let x = 0; x < 150; x += 1) {
-            if (imgData[(y * 150 + x) * 4] > 128) {
-              textPoints.push({ x: (x - 75) * 0.007 + cellXOffset, y: -(y - 120) * 0.007 });
+        for (let y = 0; y < 500; y += 1) {
+          for (let x = 0; x < 400; x += 1) {
+            if (imgData[(y * 400 + x) * 4] > 128) {
+              // Increased scale factor (0.0025 -> 0.0032) for larger text
+              textPoints.push({ x: (x - 200) * 0.0032 + cellXOffset, y: -(y - 280) * 0.0032 });
             }
           }
         }
       }
       
       for (let i = 0; i < N; i++) {
-        const r = Math.random();
         let px, py, pz, h = 0;
-        if (r < 0.30 && textPoints.length > 0) {
+        const r = Math.random();
+        
+        if (r < 0.70 && textPoints.length > 0) { 
+          // 1. DATA TEXT (YELLOW)
           const p = textPoints[Math.floor(Math.random() * textPoints.length)];
           px = p.x; py = p.y; pz = 0;
           h = 1.0;
-        } else if (r < 0.35) {
+        } else if (r < 0.85) {
+          // 2. ARROWS (LIGHT GLOW)
           const arrowIdx = Math.floor(Math.random() * (numCells - 1));
           const cellXOffset = (arrowIdx - (numCells - 1) / 2) * spacing;
           const gapStart = cellXOffset + size/2 + 0.1; const gapEnd = cellXOffset + spacing - size/2 - 0.1;
           const arrowPart = Math.random();
           if (arrowPart < 0.6) { px = gapStart + Math.random() * (gapEnd - gapStart); py = 0; pz = 0; }
           else { let u = Math.random(), v = Math.random(); if (u + v > 1) { u = 1 - u; v = 1 - v; } px = gapEnd + u * (-0.2) + v * (-0.2); py = u * 0.15 + v * (-0.15); pz = 0; }
-        } else if (r < 0.80) {
+          h = 0.4;
+        } else if (r < 0.96) {
+          // 3. NODE BOXES (CYAN/WHITE)
           const cell = Math.floor(Math.random() * numCells);
           const edge = Math.floor(Math.random() * 12);
           px = (Math.random() - 0.5) * size; py = (Math.random() - 0.5) * size; pz = (Math.random() - 0.5) * size;
@@ -432,10 +453,11 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
           else if (edge === 10) { px = -size/2; py = size/2; }
           else if (edge === 11) { px = -size/2; py = -size/2; }
           const cellXOffset = (cell - (numCells - 1) / 2) * spacing; px += cellXOffset;
+          h = 0.0;
         } else {
-          const cell = Math.floor(Math.random() * numCells);
-          const cellXOffset = (cell - (numCells - 1) / 2) * spacing;
-          px = cellXOffset + (Math.random() - 0.5) * size * 0.9; py = (Math.random() - 0.5) * size * 0.9; pz = (Math.random() - 0.5) * size * 0.9;
+          // 4. RANDOM NOISE
+          px = (Math.random() - 0.5) * 8; py = (Math.random() - 0.5) * 4; pz = (Math.random() - 0.5) * 2;
+          h = 0.0;
         }
         pos[i * 3] = px * 1.1; pos[i * 3 + 1] = py * 1.1; pos[i * 3 + 2] = pz * 1.1;
         hlt[i] = h;
@@ -664,6 +686,20 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       return { pos, hlt };
     };
 
+    const getInteractiveArray = () => {
+      const res = getArray();
+      const cellIdxs = new Float32Array(N);
+      const size = 0.8;
+      const numCells = 10;
+      for (let i = 0; i < N; i++) {
+        // Calculate cell index based on x position for highlighting
+        const px = res.pos[i * 3];
+        const c = Math.floor((px / size) + (numCells / 2));
+        cellIdxs[i] = Math.max(0, Math.min(numCells - 1, c));
+      }
+      return { ...res, cellIdxs };
+    };
+
     const s0 = getSphere();
     const s1 = getArray();
     const s2 = getStack();
@@ -671,11 +707,16 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     const s4 = getLinkedList();
     const s5 = getQueue();
     const s6 = getHash();
-    const s7 = getSphere();
+    const s7 = getInteractiveArray();
 
     const emptyHlt = new Float32Array(this.N);
-    this.shapes = [s0, s1.pos, s2.pos, s3.pos, s4.pos, s5.pos, s6.pos, s7];
-    this.highlights = [emptyHlt, s1.hlt, s2.hlt, s3.hlt, s4.hlt, s5.hlt, s6.hlt, emptyHlt];
+    const emptyCells = new Float32Array(this.N).fill(-1);
+
+    this.shapes = [s0, s1.pos, s2.pos, s3.pos, s4.pos, s5.pos, s6.pos, s7.pos];
+    this.highlights = [emptyHlt, s1.hlt, s2.hlt, s3.hlt, s4.hlt, s5.hlt, s6.hlt, s7.hlt];
+    
+    // Store cell indices for the interactive array (shape 7)
+    (this as any).cellData = [emptyCells, emptyCells, emptyCells, emptyCells, emptyCells, emptyCells, emptyCells, s7.cellIdxs];
 
     this.blastDir = new Float32Array(N * 3);
     for (let i = 0; i < N; i++) {
@@ -701,17 +742,21 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
     this.geo.setAttribute('aRnd', new THREE.BufferAttribute(aRnd, 1));
     this.geo.setAttribute('aHighlight', new THREE.BufferAttribute(new Float32Array(this.N), 1));
+    this.geo.setAttribute('aCellIndex', new THREE.BufferAttribute(new Float32Array(this.N), 1));
 
     const vertexShader = `
       attribute float size;
       attribute float aRnd;
       attribute float aHighlight;
+      attribute float aCellIndex;
       varying float vOp;
       varying float vHighlight;
+      varying float vCellIdx;
       uniform float uTime;
       void main() {
         vOp = 0.45 + 0.55 * sin(uTime * 1.8 + aRnd * 9.0);
         vHighlight = aHighlight;
+        vCellIdx = aCellIndex;
         vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
         gl_PointSize = size * (32.0 / -mvPosition.z);
         gl_Position = projectionMatrix * mvPosition;
@@ -722,19 +767,30 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       uniform vec3 uColor;
       uniform vec3 uGlow;
       uniform float uBlast;
+      uniform float uActiveCell;
       varying float vOp;
       varying float vHighlight;
+      varying float vCellIdx;
       void main() {
         vec2 pt = gl_PointCoord - vec2(0.5);
         float d = length(pt);
         if (d > 0.5) discard;
-        float core = exp(-d * 7.0);
-        float glow = exp(-d * 3.0) * 0.5;
+        
+        // Sharper core for better legibility
+        float core = smoothstep(0.5, 0.1, d); 
+        float glow = exp(-d * 6.0) * 0.4;
+        
         vec3 highlightCol = vec3(0.98, 0.8, 0.08); // #FACC15 Yellow
+        
+        // Interactive cell highlight logic
+        float isCellActive = (uActiveCell >= 0.0 && abs(vCellIdx - uActiveCell) < 0.1) ? 1.0 : 0.0;
+        
         vec3 baseCol = mix(uGlow, uColor, core);
-        vec3 col = mix(baseCol, highlightCol, vHighlight);
+        vec3 col = mix(baseCol, highlightCol, max(vHighlight, isCellActive));
+        
         float blastFade = mix(1.0, 0.35, uBlast);
-        gl_FragColor = vec4(col, (core + glow) * vOp * blastFade);
+        float alpha = (core + glow) * vOp * blastFade;
+        gl_FragColor = vec4(col, alpha);
       }
     `;
 
@@ -745,7 +801,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
         uTime: { value: 0 },
         uColor: { value: new THREE.Color(0xffffff) },
         uGlow: { value: new THREE.Color(0x06B6D4) },
-        uBlast: { value: 0 }
+        uBlast: { value: 0 },
+        uActiveCell: { value: -1.0 }
       },
       transparent: true,
       depthWrite: false,
@@ -767,16 +824,18 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
     this.blastSmooth = this.lerp(this.blastSmooth, this.blastProgress, 0.06);
     this.mat.uniforms['uBlast'].value = this.blastSmooth;
+    this.mat.uniforms['uActiveCell'].value = this.interactiveCell;
 
     // 1. Y-axis auto rotation
-    // Slow down and snap to face forward (nearest multiple of 2*PI) when shape is the Array (1), Stack (2), Tree (3), or LinkedList (4)
+    // Slow down and snap to face forward (nearest multiple of 2*PI) when shape is the Array (1), Stack (2), Tree (3), LinkedList (4), or Interactive (7)
     let arrayness1 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 1.0));
     let arrayness2 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 2.0));
     let arrayness3 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 3.0));
     let arrayness4 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 4.0));
     let arrayness5 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 5.0));
     let arrayness6 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 6.0));
-    let staticness = Math.max(arrayness1, arrayness2, arrayness3, arrayness4, arrayness5, arrayness6);
+    let arrayness7 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 7.0));
+    let staticness = Math.max(arrayness1, arrayness2, arrayness3, arrayness4, arrayness5, arrayness6, arrayness7);
     
     if (staticness > 0.01) {
       const nearestMultiple = Math.round(this.frameRotation / (Math.PI * 2)) * (Math.PI * 2);
@@ -884,10 +943,18 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       const targetH = this.lerp(h1, h2, lam);
       const highlights = this.geo.attributes['aHighlight'].array as Float32Array;
       highlights[i] = this.lerp(highlights[i], targetH, 0.14);
+
+      // Update Cell Indices (for interactive shape 7)
+      const c1 = (this as any).cellData[bi][i];
+      const c2 = (this as any).cellData[ni][i];
+      const targetC = this.lerp(c1, c2, lam);
+      const cellIndices = this.geo.attributes['aCellIndex'].array as Float32Array;
+      cellIndices[i] = targetC;
     }
 
     this.geo.attributes['position'].needsUpdate = true;
     this.geo.attributes['aHighlight'].needsUpdate = true;
+    this.geo.attributes['aCellIndex'].needsUpdate = true;
     this.renderer.render(this.scene, this.camera);
 
     this.animFrameId = requestAnimationFrame((t) => this.animate(t));
