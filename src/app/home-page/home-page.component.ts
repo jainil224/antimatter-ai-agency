@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HeroSectionComponent } from '../hero-section/hero-section.component';
 import { ServicesSectionComponent } from '../services-section/services-section.component';
@@ -27,6 +27,7 @@ gsap.registerPlugin(ScrollTrigger);
   styleUrl: './home-page.component.scss'
 })
 export class HomePageComponent implements AfterViewInit, OnDestroy {
+  public activeDS = 'Array';
   public activeStep = 0;
   public activeOp = 'Search';
   public opDescription = 'Watch how data is accessed and manipulated in real-time as you scroll through the memory blocks.';
@@ -34,7 +35,9 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
   public spaceComplexity = 'O(1)';
   public opStatus = 'Searching...';
   
-  private triggers: ScrollTrigger[] = [];
+  private triggers: any[] = [];
+
+  constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef) {}
 
   ngAfterViewInit() {
     setTimeout(() => {
@@ -165,72 +168,126 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
           }
         }
       }));
-
-      // 6. Interactive Section simulation (3 Phases + Pinning)
+      // 6. UNIFIED Interactive Section (Array -> Morph -> Stack)
       this.triggers.push(ScrollTrigger.create({
         trigger: '.interactive-section',
         start: 'top top',
-        end: '+=200%', // Triple the scroll length for phases
+        end: '+=450%', // optimized for better engagement
         pin: true,
         scrub: true,
         onUpdate: (self) => {
           if (threeState) {
-            threeState.scrollShapeTarget = 7;
-            threeState.ptsPosTarget = -4.2; // Move further left to avoid text overlap
+            const p = self.progress;
+            threeState.ptsPosTarget = -4.2;
             threeState.posYTarget = -0.4;
             threeState.scaleTarget = 0.95;
-            
-            const p = self.progress;
-            
-            // Phase 0: Settle into position (0 - 15%)
-            if (p < 0.15) {
-              this.activeOp = 'Settling';
-              this.opDescription = 'Preparing memory for live simulation...';
-              this.opStatus = 'Standby';
-              threeState.interactiveCell = -1;
-              return;
-            }
 
-            // Remap 0.15-1.0 to 0.0-1.0 for the 3 operations
-            const activeP = (p - 0.15) / 0.85;
+            this.ngZone.run(() => {
+              // --- PHASE 1: ARRAY OPERATIONS (0.0 - 0.45) ---
+              if (p < 0.45) {
+                this.activeDS = 'Array';
+                threeState.scrollShapeTarget = 7; 
+                
+                const localP = p / 0.45;
+                if (localP < 0.05) {
+                  this.activeOp = 'Settling';
+                  this.opDescription = 'Preparing Array memory blocks...';
+                  this.opStatus = 'Standby';
+                  threeState.interactiveCell = -1;
+                } else {
+                  const opP = (localP - 0.05) / 0.95;
+                  if (opP < 0.33) {
+                    this.activeOp = 'Search';
+                    this.opDescription = 'Linear Search: Scanning each memory address...';
+                    this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(1)';
+                    const step = Math.floor((opP / 0.33) * 11);
+                    this.activeStep = step;
+                    this.opStatus = 'Searching Index #' + (step-1 >= 0 ? step-1 : 0);
+                    threeState.interactiveCell = step - 1;
+                  } else if (opP < 0.66) {
+                    this.activeOp = 'Insertion';
+                    this.opDescription = 'Insertion: Shifting elements for new data...';
+                    this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(1)';
+                    const innerP = (opP - 0.33) / 0.33;
+                    const step = Math.floor(innerP * 12);
+                    this.activeStep = step;
+                    
+                    if (step <= 1) {
+                      this.opStatus = 'Initializing...';
+                      threeState.interactiveCell = -1;
+                    } else if (step <= 8) {
+                      // Shifting phase (highlighting 9 down to 4)
+                      const shiftIdx = 9 - (step - 2);
+                      this.opStatus = `Shifting Index ${shiftIdx} → ${shiftIdx + 1}`;
+                      threeState.interactiveCell = shiftIdx;
+                    } else {
+                      this.opStatus = 'Inserting at Index #4';
+                      threeState.interactiveCell = 4;
+                    }
+                  } else {
+                    this.activeOp = 'Deletion';
+                    this.opDescription = 'Deletion: Removing element and shifting back...';
+                    this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(1)';
+                    const innerP = (opP - 0.66) / 0.34;
+                    const step = Math.floor(innerP * 12);
+                    this.activeStep = step;
+                    
+                    if (step <= 2) {
+                      this.opStatus = 'Removing Index #2';
+                      threeState.interactiveCell = 2;
+                    } else if (step <= 10) {
+                      // Shift back phase (highlighting 3 up to 9)
+                      const shiftIdx = step - 1;
+                      this.opStatus = `Shifting Index ${shiftIdx} → ${shiftIdx - 1}`;
+                      threeState.interactiveCell = shiftIdx;
+                    } else {
+                      this.opStatus = 'Clean up';
+                      threeState.interactiveCell = -1;
+                    }
+                  }
+                }
+              } 
+              // --- PHASE 2: MORPH TRANSITION (0.45 - 0.50) ---
+              else if (p < 0.50) {
+                this.activeDS = 'Stack';
+                this.activeOp = 'Morphing';
+                this.opDescription = 'Converting Array to Stack (LIFO)...';
+                this.opStatus = 'Restructuring...';
+                threeState.scrollShapeTarget = 2; 
+                threeState.interactiveCell = -1;
+              }
+              // --- PHASE 3: STACK OPERATIONS (0.50 - 1.0) ---
+              else {
+                this.activeDS = 'Stack';
+                threeState.scrollShapeTarget = 2; 
+                threeState.blastProgress = 0; // Explicitly kill any blast during simulation
+                
+                const localP = (p - 0.50) / 0.50;
+                const step = Math.floor(localP * 12);
+                this.activeStep = step;
 
-            if (activeP < 0.33) {
-              // PHASE 1: SEARCH
-              this.activeOp = 'Search';
-              this.opDescription = 'Linear Search: Scanning each memory address until the target value is found.';
-              this.timeComplexity = 'O(n)';
-              this.spaceComplexity = 'O(1)';
-              
-              const localP = activeP / 0.33;
-              const step = Math.floor(localP * 11);
-              this.activeStep = step;
-              this.opStatus = 'Searching Index #' + (step - 1 >= 0 ? step - 1 : 0);
-              threeState.interactiveCell = step - 1;
-            } else if (activeP < 0.66) {
-              // PHASE 2: INSERTION
-              this.activeOp = 'Insertion';
-              this.opDescription = 'Insertion: Shifting elements to create space and allocating a new memory block.';
-              this.timeComplexity = 'O(n)';
-              this.spaceComplexity = 'O(1)';
-              
-              const localP = (activeP - 0.33) / 0.33;
-              this.activeStep = Math.floor(localP * 10);
-              const targetIdx = 4;
-              this.opStatus = 'Inserting at Index #' + targetIdx;
-              threeState.interactiveCell = targetIdx;
-            } else {
-              // PHASE 3: DELETION
-              this.activeOp = 'Deletion';
-              this.opDescription = 'Deletion: Removing an element and shifting subsequent items to maintain continuity.';
-              this.timeComplexity = 'O(n)';
-              this.spaceComplexity = 'O(1)';
-              
-              const localP = (activeP - 0.66) / 0.34;
-              this.activeStep = Math.floor(localP * 10);
-              const targetIdx = 2;
-              this.opStatus = 'Deleting Index #' + targetIdx;
-              threeState.interactiveCell = targetIdx;
-            }
+                if (step <= 3) {
+                  this.activeOp = 'Push';
+                  this.opDescription = 'Push: Adding element to the TOP.';
+                  this.timeComplexity = 'O(1)'; this.spaceComplexity = 'O(1)';
+                  this.opStatus = 'Pushing 10 to TOP';
+                  threeState.interactiveCell = 0; // Top cell
+                } else if (step <= 7) {
+                  this.activeOp = 'Pop';
+                  this.opDescription = 'Pop: Removing element from TOP (LIFO).';
+                  this.timeComplexity = 'O(1)'; this.spaceComplexity = 'O(1)';
+                  this.opStatus = 'Popping TOP element';
+                  threeState.interactiveCell = 0;
+                } else {
+                  this.activeOp = 'Peek';
+                  this.opDescription = 'Peek: Viewing the TOP element.';
+                  this.timeComplexity = 'O(1)'; this.spaceComplexity = 'O(1)';
+                  this.opStatus = 'Peeking at TOP: 22';
+                  threeState.interactiveCell = 0;
+                }
+              }
+              this.cdr.detectChanges();
+            });
           }
         },
         onLeave: () => { if (threeState) threeState.interactiveCell = -1; },
@@ -245,12 +302,11 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
     this.triggers.forEach(t => t.kill());
     ScrollTrigger.refresh();
     
-    // Reset any global ThreeJS states when navigating away from Home
     const threeState = (window as any).threeSceneState;
     if (threeState) {
-      threeState.ptsPosTarget = 0; // Center scene
+      threeState.ptsPosTarget = 0;
       threeState.blastProgress = 0;
-      threeState.scrollShapeTarget = 0; // Sphere
+      threeState.scrollShapeTarget = 0;
     }
   }
 }

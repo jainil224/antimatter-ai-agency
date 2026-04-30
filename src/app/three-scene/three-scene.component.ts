@@ -221,29 +221,30 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     const getStack = () => {
       const pos = new Float32Array(N * 3);
       const hlt = new Float32Array(N);
+      const idx = new Float32Array(N).fill(-1);
       const numCells = 6;
       const sizeX = 1.6;
       const sizeY = 0.7;
       const sizeZ = 0.7;
       const values = [40, 55, 22, 30, 20, 10];
       
-      const textPoints: {x: number, y: number}[] = [];
+      const textPoints: {x: number, y: number, c: number}[] = [];
       const cvs = document.createElement('canvas');
-      cvs.width = 100; cvs.height = 100;
+      cvs.width = 200; cvs.height = 200;
       const ctx = cvs.getContext('2d')!;
       
       for(let c=0; c<numCells; c++) {
-        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 100, 100);
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 200, 200);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 50px Arial';
+        ctx.font = 'bold 110px monospace';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(values[c].toString(), 50, 50);
-        const imgData = ctx.getImageData(0, 0, 100, 100).data;
+        ctx.fillText(values[c].toString(), 100, 100);
+        const imgData = ctx.getImageData(0, 0, 200, 200).data;
         const cellYOffset = ((numCells - 1) / 2 - c) * sizeY;
-        for (let y = 0; y < 100; y += 1) {
-          for (let x = 0; x < 100; x += 1) {
-            if (imgData[(y * 100 + x) * 4] > 128) {
-              textPoints.push({ x: (x - 50) * 0.008, y: -(y - 50) * 0.008 + cellYOffset });
+        for (let y = 0; y < 200; y += 1) {
+          for (let x = 0; x < 200; x += 1) {
+            if (imgData[(y * 200 + x) * 4] > 128) {
+              textPoints.push({ x: (x - 100) * 0.0055, y: -(y - 100) * 0.0055 + cellYOffset, c: c });
             }
           }
         }
@@ -251,12 +252,13 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       
       for (let i = 0; i < N; i++) {
         const r = Math.random();
-        let px, py, pz, h = 0;
+        let px, py, pz, h = 0, cIdx = -1;
         
-        if (r < 0.55 && textPoints.length > 0) {
+        if (r < 0.8 && textPoints.length > 0) { 
           const p = textPoints[Math.floor(Math.random() * textPoints.length)];
           px = p.x; py = p.y; pz = 0;
           h = 1.0;
+          cIdx = p.c;
         } else {
           const cell = Math.floor(Math.random() * numCells);
           const edge = Math.floor(Math.random() * 12);
@@ -277,13 +279,15 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
           else if (edge === 11) { px = -sizeX/2; py = -sizeY/2; }
           const cellYOffset = ((numCells - 1) / 2 - cell) * sizeY;
           py += cellYOffset;
+          cIdx = cell;
         }
         pos[i * 3] = px;
         pos[i * 3 + 1] = py;
         pos[i * 3 + 2] = pz;
         hlt[i] = h;
+        idx[i] = cIdx;
       }
-      return { pos, hlt };
+      return { pos, hlt, idx };
     };
 
     // 4. Binary Tree

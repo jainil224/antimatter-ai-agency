@@ -12,7 +12,7 @@
       <div class="interactive-main-content">
         <div class="interactive-header">
           <span class="interactive-label">LIVE SIMULATION</span>
-          <h2>Interactive Array <span>{{ activeOp }}</span></h2>
+          <h2>Interactive <span [style.color]="'#22D3EE'">{{ activeDS }}</span>&nbsp;<span>{{ activeOp }}</span></h2>
           <p>{{ opDescription }}</p>
         </div>
 
@@ -21,31 +21,51 @@
             <div class="dot red"></div>
             <div class="dot yellow"></div>
             <div class="dot green"></div>
-            <span class="filename">array_ops.py</span>
+            <span class="filename">{{ activeDS.toLowerCase() }}_ops.py</span>
           </div>
           <div class="code-view">
-            <ng-container [ngSwitch]="activeOp">
-              <!-- SEARCH OP -->
-              <div *ngSwitchCase="'Search'">
-                <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">search</span>(arr, target):</div>
-                <div class="line" [class.active]="activeStep >= 1 && activeStep <= 10"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">for</span> i <span class="keyword">in</span> <span class="func">range</span>(<span class="func">len</span>(arr)):</div>
-                <div class="line" [class.active]="activeStep > 0 && activeStep <= 10"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Accessing index [{{ activeStep - 1 >= 0 ? activeStep - 1 : 0 }}]</span></div>
-                <div class="line" [class.active]="activeStep === 11"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> arr[i] == target: <span class="keyword">return</span> i</div>
-              </div>
-              <!-- INSERT OP -->
-              <div *ngSwitchCase="'Insertion'">
-                <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">insert</span>(arr, idx, val):</div>
-                <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Shift elements to the right</span></div>
-                <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;arr.insert(idx, val)</div>
-                <div class="line" [class.active]="activeStep > 5"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> arr <span class="comment"># Array resized</span></div>
-              </div>
-              <!-- DELETE OP -->
-              <div *ngSwitchCase="'Deletion'">
-                <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">delete</span>(arr, idx):</div>
-                <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Remove and shift back</span></div>
-                <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">del</span> arr[idx]</div>
-                <div class="line" [class.active]="activeStep > 5"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> arr <span class="comment"># Memory freed</span></div>
-              </div>
+            <!-- ARRAY OPS -->
+            <ng-container *ngIf="activeDS === 'Array'">
+              <ng-container [ngSwitch]="activeOp">
+                <div *ngSwitchCase="'Search'">
+                  <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">search</span>(arr, target):</div>
+                  <div class="line" [class.active]="activeStep >= 1 && activeStep <= 10"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">for</span> i <span class="keyword">in</span> <span class="func">range</span>(<span class="func">len</span>(arr)):</div>
+                  <div class="line" [class.active]="activeStep > 0 && activeStep <= 10"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Accessing index [{{ activeStep - 1 >= 0 ? activeStep - 1 : 0 }}]</span></div>
+                  <div class="line" [class.active]="activeStep === 11"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> arr[i] == target: <span class="keyword">return</span> i</div>
+                </div>
+                <div *ngSwitchCase="'Insertion'">
+                  <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">insert</span>(arr, idx, val):</div>
+                  <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Shift elements to the right</span></div>
+                  <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;arr.insert(idx, val)</div>
+                  <div class="line" [class.active]="activeStep > 5"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> arr <span class="comment"># Array resized</span></div>
+                </div>
+                <div *ngSwitchCase="'Deletion'">
+                  <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">delete</span>(arr, idx):</div>
+                  <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Remove and shift back</span></div>
+                  <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">del</span> arr[idx]</div>
+                  <div class="line" [class.active]="activeStep > 5"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> arr <span class="comment"># Memory freed</span></div>
+                </div>
+              </ng-container>
+            </ng-container>
+
+            <!-- STACK OPS -->
+            <ng-container *ngIf="activeDS === 'Stack'">
+              <ng-container [ngSwitch]="activeOp">
+                <div *ngSwitchCase="'Push'">
+                  <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">push</span>(stack, value):</div>
+                  <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Add element to TOP</span></div>
+                  <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;stack.append(value)</div>
+                </div>
+                <div *ngSwitchCase="'Pop'">
+                  <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">pop</span>(stack):</div>
+                  <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Remove from TOP (LIFO)</span></div>
+                  <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> stack.pop()</div>
+                </div>
+                <div *ngSwitchCase="'Peek'">
+                  <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">peek</span>(stack):</div>
+                  <div class="line" [class.active]="activeStep >= 1"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> stack[-1]</div>
+                </div>
+              </ng-container>
             </ng-container>
           </div>
         </div>
