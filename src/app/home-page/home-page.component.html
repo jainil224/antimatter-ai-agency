@@ -28,16 +28,16 @@
             <ng-container [ngSwitch]="activeOp">
 
               <div *ngSwitchCase="'Insertion'">
-                <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">insert</span>(arr, idx, val):</div>
-                <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Shift elements to the right</span></div>
-                <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;arr.insert(idx, val)</div>
-                <div class="line" [class.active]="activeStep > 5"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> arr <span class="comment"># Array resized</span></div>
+                <div class="line" [class.active]="activeStep <= 1"><span>1</span> <span class="keyword">def</span> <span class="func">insert</span>(arr, idx, val):</div>
+                <div class="line" [class.active]="activeStep > 1 && activeStep <= 7"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Shift elements to the right</span></div>
+                <div class="line" [class.active]="activeStep > 7 && activeStep <= 10"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;arr.insert(idx, val)</div>
+                <div class="line" [class.active]="activeStep > 10"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> arr <span class="comment"># Array resized</span></div>
               </div>
               <div *ngSwitchCase="'Deletion'">
-                <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">delete</span>(arr, idx):</div>
-                <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Remove and shift back</span></div>
-                <div class="line" [class.active]="activeStep >= 1 && activeStep <= 5"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">del</span> arr[idx]</div>
-                <div class="line" [class.active]="activeStep > 5"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> arr <span class="comment"># Memory freed</span></div>
+                <div class="line" [class.active]="activeStep <= 1"><span>1</span> <span class="keyword">def</span> <span class="func">delete</span>(arr, idx):</div>
+                <div class="line" [class.active]="activeStep > 1 && activeStep <= 3"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">del</span> arr[idx] <span class="comment"># Remove element</span></div>
+                <div class="line" [class.active]="activeStep > 3 && activeStep <= 10"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Shift remaining elements back</span></div>
+                <div class="line" [class.active]="activeStep > 10"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> arr <span class="comment"># Memory freed</span></div>
               </div>
             </ng-container>
           </ng-container>

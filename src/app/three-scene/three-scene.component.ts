@@ -174,10 +174,11 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
     const boxGeo = new THREE.BoxGeometry(size, size, size);
     const edgesGeo = new THREE.EdgesGeometry(boxGeo);
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9, linewidth: 2 });
 
     for (let i = 0; i < numCells; i++) {
-      const cube = new THREE.LineSegments(edgesGeo, lineMat);
+      // Clone material per cube so each can have an independent color
+      const cubeMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9, linewidth: 2 });
+      const cube = new THREE.LineSegments(edgesGeo, cubeMat);
       const x = (i - (numCells - 1) / 2) * spacing;
       cube.position.set(x, 0, 0);
       this.arrayCubes.push(cube);
@@ -1165,24 +1166,34 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     });
 
     // ── PER-CUBE COLOR CODING (Insert = green, Delete = red) ──────────────
-    const opColor = this.operationType === 'insert'
-      ? 0x22C55E  // green
-      : this.operationType === 'delete'
-        ? 0xEF4444  // red
-        : 0x22D3EE; // default cyan
+    const targetColor = new THREE.Color(
+      this.operationType === 'insert' ? 0x00FF88   // vivid green
+      : this.operationType === 'delete' ? 0xFF3333  // vivid red
+      : 0x22D3EE                                    // default cyan
+    );
+    const defaultColor = new THREE.Color(0x22D3EE);
 
     this.arrayCubes.forEach((cube, i) => {
       const mat = cube.material as THREE.LineBasicMaterial;
-      const isActive = i === this.highlightedCellIndex;
-      if (isActive && this.operationType !== 'none') {
-        mat.color.setHex(opColor);
-        mat.opacity = arrayOpacity * globalOpacity;
-        // Subtle scale pulse on the active block
-        const pulse = 1.0 + Math.sin(performance.now() * 0.006) * 0.04;
+      const isActive = i === this.highlightedCellIndex && this.operationType !== 'none';
+
+      // Smoothly lerp toward the target color (active) or back to cyan (inactive)
+      const desired = isActive ? targetColor : defaultColor;
+      mat.color.lerp(desired, 0.18); // smooth color transition
+
+      if (isActive) {
+        // Scale pulse: bigger & more obvious for green/red
+        const pulse = 1.0 + Math.sin(performance.now() * 0.008) * 0.08;
         cube.scale.set(pulse, pulse, pulse);
+        mat.opacity = Math.min(1.0, (arrayOpacity * globalOpacity) + 0.15);
       } else {
-        mat.color.setHex(0x22D3EE); // restore default cyan
-        cube.scale.set(1, 1, 1);
+        // Snap scale back to normal when not active
+        cube.scale.set(
+          this.lerp(cube.scale.x, 1.0, 0.15),
+          this.lerp(cube.scale.y, 1.0, 0.15),
+          this.lerp(cube.scale.z, 1.0, 0.15)
+        );
+        mat.opacity = arrayOpacity * globalOpacity;
       }
     });
 
