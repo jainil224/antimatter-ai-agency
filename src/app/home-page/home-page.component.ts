@@ -188,11 +188,11 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
         }
       }));
 
-      // 6. UNIFIED Interactive Section (Array -> Morph -> Stack)
+      // 6. UNIFIED Interactive Section (Array -> Morph -> Stack -> Morph -> Tree)
       this.triggers.push(ScrollTrigger.create({
         trigger: '.interactive-section',
         start: 'top top',
-        end: '+=450%', // optimized for better engagement
+        end: '+=600%', // Increased for Tree operations
         pin: true,
         scrub: true,
         onUpdate: (self) => {
@@ -203,12 +203,12 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
             threeState.scaleTarget = 0.95;
 
             this.ngZone.run(() => {
-              // --- PHASE 1: ARRAY OPERATIONS (0.0 - 0.45) ---
-              if (p < 0.45) {
+              // --- PHASE 1: ARRAY OPERATIONS (0.0 - 0.35) ---
+              if (p < 0.35) {
                 this.activeDS = 'Array';
                 threeState.scrollShapeTarget = 7; 
                 
-                const localP = p / 0.45;
+                const localP = p / 0.35;
                 if (localP < 0.05) {
                   this.activeOp = 'Settling';
                   this.opDescription = 'Preparing Array memory blocks...';
@@ -274,8 +274,8 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                   }
                 }
               } 
-              // --- PHASE 2: MORPH TRANSITION (0.45 - 0.50) ---
-              else if (p < 0.50) {
+              // --- PHASE 2: MORPH TRANSITION TO STACK (0.35 - 0.40) ---
+              else if (p < 0.40) {
                 this.activeDS = 'Stack';
                 this.activeOp = 'Morphing';
                 this.opDescription = 'Converting Array to Stack (LIFO)...';
@@ -283,13 +283,13 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                 threeState.scrollShapeTarget = 8; 
                 threeState.interactiveCells = [-1, -1];
               }
-              // --- PHASE 3: STACK OPERATIONS (0.50 - 1.0) ---
-              else {
+              // --- PHASE 3: STACK OPERATIONS (0.40 - 0.70) ---
+              else if (p < 0.70) {
                 this.activeDS = 'Stack';
                 threeState.scrollShapeTarget = 8; 
-                threeState.blastProgress = 0; // Explicitly kill any blast during simulation
+                threeState.blastProgress = 0; 
                 
-                const localP = (p - 0.50) / 0.50;
+                const localP = (p - 0.40) / 0.30;
                 const step = Math.floor(localP * 12);
                 this.activeStep = step;
 
@@ -297,45 +297,109 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                   this.activeOp = 'Push';
                   this.opDescription = 'Push: Adding element to the TOP.';
                   this.timeComplexity = 'O(1)'; this.spaceComplexity = 'O(1)';
-                  this.opStatus = 'Pushing 10 to TOP';
+                  this.opStatus = 'Pushing 25 to TOP';
                   
-                  const pPush = Math.min(1, step / 2.5);
+                  const pPush = Math.min(1, step / 2.0);
                   threeState.interactiveCells = [0, -1];
-                  threeState.activeHighlightColor.setHex(0x22D3EE); 
+                  threeState.activeHighlightColor.setHex(0x00FF88); 
                   threeState.activeCellScale = 0.3 + 0.7 * pPush;
                   threeState.activeCellOpacity = pPush;
+                  threeState.operationType = 'insert';
+                  threeState.highlightedCellIndex = 0;
                 } else if (step <= 5) {
                   this.activeOp = 'Pop';
                   this.opDescription = 'Pop: Removing element from TOP (LIFO).';
                   this.timeComplexity = 'O(1)'; this.spaceComplexity = 'O(1)';
                   this.opStatus = 'Popping TOP element';
                   
-                  const pPop = Math.min(1, (step - 3) / 2.5);
+                  const pPop = Math.min(1, (step - 3) / 2.0);
                   threeState.interactiveCells = [0, -1];
-                  threeState.activeHighlightColor.setHex(0xF87171); // Explicit Red for Pop
+                  threeState.activeHighlightColor.setHex(0xFF3333); // Explicit Red for Pop
                   threeState.activeCellScale = 1.0 - 0.4 * pPop;
                   threeState.activeCellOpacity = 1.0 - pPop;
+                  threeState.operationType = 'delete';
+                  threeState.highlightedCellIndex = 0;
                 } else if (step <= 10) {
                   this.activeOp = 'Search';
                   this.opDescription = 'Search: Iterating from TOP to find a value.';
                   this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(1)';
-                  const searchIdx = Math.min(3, step - 6);
+                  const searchIdx = Math.min(4, step - 6);
                   this.opStatus = `Searching block #${searchIdx}`;
                   
                   threeState.interactiveCells = [searchIdx, -1];
                   threeState.activeHighlightColor.setHex(0xFACC15);
                   threeState.activeCellScale = 1.05; // Subtle pop when searching
                   threeState.activeCellOpacity = 1.0;
+                  threeState.operationType = 'search';
+                  threeState.highlightedCellIndex = searchIdx;
                 } else {
                   this.activeOp = 'Peek';
                   this.opDescription = 'Peek: Viewing the TOP element.';
                   this.timeComplexity = 'O(1)'; this.spaceComplexity = 'O(1)';
-                  this.opStatus = 'Peeking at TOP: 40';
+                  this.opStatus = 'Peeking at TOP: 25';
                   
                   threeState.interactiveCells = [0, -1];
                   threeState.activeHighlightColor.setHex(0xA855F7);
                   threeState.activeCellScale = 1.0;
                   threeState.activeCellOpacity = 1.0;
+                  threeState.operationType = 'search'; // Using search style for peek
+                  threeState.highlightedCellIndex = 0;
+                }
+              }
+              // --- PHASE 4: MORPH TRANSITION TO TREE (0.70 - 0.75) ---
+              else if (p < 0.75) {
+                this.activeDS = 'Tree';
+                this.activeOp = 'Morphing';
+                this.opDescription = 'Converting Stack to Binary Tree...';
+                this.opStatus = 'Restructuring...';
+                threeState.scrollShapeTarget = 9; 
+                threeState.interactiveCells = [-1, -1];
+                threeState.operationType = 'none';
+              }
+              // --- PHASE 5: TREE OPERATIONS (0.75 - 1.0) ---
+              else {
+                this.activeDS = 'Tree';
+                threeState.scrollShapeTarget = 9; 
+                threeState.blastProgress = 0; 
+                
+                const localP = (p - 0.75) / 0.25;
+                const step = Math.floor(localP * 12);
+                this.activeStep = step;
+
+                if (step <= 5) {
+                  this.activeOp = 'Traversal';
+                  this.opDescription = 'In-order Traversal: Left, Root, Right';
+                  this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(h)';
+                  
+                  // Simple mock traversal sequence over the tree's 7 nodes
+                  const traversalOrder = [3, 1, 4, 0, 5, 2, 6]; 
+                  const tIdx = Math.min(6, step);
+                  const nodeIdx = traversalOrder[tIdx];
+                  this.opStatus = `Visiting node ${nodeIdx}`;
+                  
+                  threeState.interactiveCells = [nodeIdx, -1];
+                  threeState.activeHighlightColor.setHex(0xFACC15); // Yellow
+                  threeState.activeCellScale = 1.05;
+                  threeState.activeCellOpacity = 1.0;
+                  threeState.operationType = 'search';
+                  threeState.highlightedCellIndex = nodeIdx;
+                } else {
+                  this.activeOp = 'Search';
+                  this.opDescription = 'Binary Search: Finding element in O(log n)';
+                  this.timeComplexity = 'O(log n)'; this.spaceComplexity = 'O(1)';
+                  
+                  // Mock binary search path to 25 (Root -> Right -> Left)
+                  const searchPath = [0, 2, 5]; 
+                  const sIdx = Math.min(2, Math.floor((step - 6) / 2));
+                  const nodeIdx = searchPath[sIdx];
+                  this.opStatus = `Checking node ${nodeIdx}...`;
+                  
+                  threeState.interactiveCells = [nodeIdx, -1];
+                  threeState.activeHighlightColor.setHex(0x00FF88); // Green
+                  threeState.activeCellScale = 1.1;
+                  threeState.activeCellOpacity = 1.0;
+                  threeState.operationType = 'insert';
+                  threeState.highlightedCellIndex = nodeIdx;
                 }
               }
               this.cdr.detectChanges();

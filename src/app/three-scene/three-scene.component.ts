@@ -216,20 +216,20 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.stackGroup.visible = false;
     this.scene.add(this.stackGroup);
 
-    const numCells = 7;
+    const numCells = 5;
     const width = 1.42; // Matches Array cube size
     const height = 1.42; 
     const depth = 1.42; 
     const spacing = 1.5; 
-    const values = [10, 25, 40, 5, 8, 99, 12]; // Matches Array values
+    const values = [25, 40, 5, 8, 99]; // Matches Array values
 
     const boxGeo = new THREE.BoxGeometry(width, height, depth);
     const edgesGeo = new THREE.EdgesGeometry(boxGeo);
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9, linewidth: 2 });
 
     for (let i = 0; i < numCells; i++) {
-      const cube = new THREE.LineSegments(edgesGeo, lineMat);
-      const y = (3 - i) * spacing; // Centered for 7 cells
+      const cubeMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9, linewidth: 2 });
+      const cube = new THREE.LineSegments(edgesGeo, cubeMat);
+      const y = (2 - i) * spacing; // Centered for 5 cells
       cube.position.set(0, y, 0);
       this.stackCubes.push(cube);
       this.stackGroup.add(cube);
@@ -263,10 +263,10 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
     const sphereGeo = new THREE.SphereGeometry(radius, 24, 24); // More segments for smoothness
     const edgesGeo = new THREE.EdgesGeometry(sphereGeo);
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9 });
 
     for (let i = 0; i < numCells; i++) {
-      const node = new THREE.LineSegments(edgesGeo, lineMat);
+      const nodeMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9 });
+      const node = new THREE.LineSegments(edgesGeo, nodeMat);
       node.position.set(positions[i].x, positions[i].y, 0);
       this.treeNodes.push(node);
       this.treeGroup.add(node);
@@ -305,10 +305,10 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
     const boxGeo = new THREE.BoxGeometry(size, size, size);
     const edgesGeo = new THREE.EdgesGeometry(boxGeo);
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9, linewidth: 2 });
 
     for (let i = 0; i < numCells; i++) {
-      const cube = new THREE.LineSegments(edgesGeo, lineMat);
+      const cubeMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9, linewidth: 2 });
+      const cube = new THREE.LineSegments(edgesGeo, cubeMat);
       const x = (i - (numCells - 1) / 2) * spacing;
       cube.position.set(x, 0, 0);
       this.linkedListCubes.push(cube);
@@ -358,10 +358,10 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
     const icosaGeo = new THREE.IcosahedronGeometry(radius, 1);
     const edgesGeo = new THREE.EdgesGeometry(icosaGeo);
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9, linewidth: 2 });
 
     for (let i = 0; i < numCells; i++) {
-      const node = new THREE.LineSegments(edgesGeo, lineMat);
+      const nodeMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9, linewidth: 2 });
+      const node = new THREE.LineSegments(edgesGeo, nodeMat);
       const x = (i - (numCells - 1) / 2) * spacing;
       node.position.set(x, 0, 0);
       this.queueNodes.push(node);
@@ -425,7 +425,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
     const stackSpacing = 1.5;
     this.stackCubes.forEach((cube, i) => {
-        const y = (3 - i) * stackSpacing;
+        const y = (2 - i) * stackSpacing;
         cube.position.set(0, y, 0);
         cube.scale.set(1, 1, 1);
         if (this.stackLabels[i]) {
@@ -478,35 +478,53 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     const stackHeight = 1.42;
     const arraySize = 1.42;
 
-    // We morph all 7 cubes from Array into Stack positions
     for (let i = 0; i < 7; i++) {
         const arrayX = (i - 3) * arraySpacing;
-        const stackY = (3 - i) * stackSpacing;
-
-        // Position interpolation
-        const tx = this.lerp(arrayX, 0, lam);
-        const ty = this.lerp(0, stackY, lam);
         
-        // Shape interpolation (Both are now cubes)
-        const tw = this.lerp(1, stackWidth / arraySize, lam);
-        const th = this.lerp(1, stackHeight / arraySize, lam);
+        if (i === 0 || i === 6) {
+            if (this.arrayCubes[i]) {
+                const ts = this.lerp(1, 0.001, lam);
+                this.arrayCubes[i].position.set(arrayX, 0, 0);
+                this.arrayCubes[i].scale.set(ts, ts, ts);
+                (this.arrayCubes[i].material as any).opacity = 0.9 * (1 - lam);
+            }
+            if (this.arrayLabels[i]) {
+                const ts = this.lerp(1.4, 0.001, lam);
+                this.arrayLabels[i].position.set(arrayX, 0, 0.1);
+                this.arrayLabels[i].scale.set(ts, ts, 1);
+                (this.arrayLabels[i].material as any).opacity = (1 - lam);
+            }
+        } else {
+            const stackIdx = i - 1;
+            const stackY = (2 - stackIdx) * stackSpacing;
 
-        if (this.arrayCubes[i]) {
-            this.arrayCubes[i].position.set(tx, ty, 0);
-            this.arrayCubes[i].scale.set(tw, th, 1);
-        }
-        if (this.arrayLabels[i]) {
-            this.arrayLabels[i].position.set(tx, ty, 0.1);
-            this.arrayLabels[i].scale.set(1.4, 1.4, 1);
-        }
-        
-        if (this.stackCubes[i]) {
-            this.stackCubes[i].position.set(tx, ty, 0);
-            this.stackCubes[i].scale.set(tw, th, 1);
-        }
-        if (this.stackLabels[i]) {
-            this.stackLabels[i].position.set(tx, ty, 0.1);
-            this.stackLabels[i].scale.set(1.4, 1.4, 1);
+            // Position interpolation
+            const tx = this.lerp(arrayX, 0, lam);
+            const ty = this.lerp(0, stackY, lam);
+            
+            // Shape interpolation (Both are now cubes)
+            const tw = this.lerp(1, stackWidth / arraySize, lam);
+            const th = this.lerp(1, stackHeight / arraySize, lam);
+
+            if (this.arrayCubes[i]) {
+                this.arrayCubes[i].position.set(tx, ty, 0);
+                this.arrayCubes[i].scale.set(tw, th, 1);
+                (this.arrayCubes[i].material as any).opacity = 0.9;
+            }
+            if (this.arrayLabels[i]) {
+                this.arrayLabels[i].position.set(tx, ty, 0.1);
+                this.arrayLabels[i].scale.set(1.4, 1.4, 1);
+                (this.arrayLabels[i].material as any).opacity = 1;
+            }
+            
+            if (this.stackCubes[stackIdx]) {
+                this.stackCubes[stackIdx].position.set(tx, ty, 0);
+                this.stackCubes[stackIdx].scale.set(tw, th, 1);
+            }
+            if (this.stackLabels[stackIdx]) {
+                this.stackLabels[stackIdx].position.set(tx, ty, 0.1);
+                this.stackLabels[stackIdx].scale.set(1.4, 1.4, 1);
+            }
         }
     }
   }
@@ -519,21 +537,41 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     ];
 
     for (let i = 0; i < 7; i++) {
-        const stackY = (3 - i) * stackSpacing;
-        const tx = this.lerp(0, treePos[i].x, lam);
-        const ty = this.lerp(stackY, treePos[i].y, lam);
+        if (i === 0 || i === 6) {
+            if (this.treeNodes[i]) {
+                this.treeNodes[i].position.set(treePos[i].x, treePos[i].y, 0);
+                const ts = this.lerp(0.001, 1, lam);
+                this.treeNodes[i].scale.set(ts, ts, ts);
+                (this.treeNodes[i].material as any).opacity = 0.9 * lam;
+            }
+            if (this.treeLabels[i]) {
+                this.treeLabels[i].position.set(treePos[i].x, treePos[i].y, 0.1);
+                const ts = this.lerp(0.001, 1.4, lam);
+                this.treeLabels[i].scale.set(ts, ts, 1);
+                (this.treeLabels[i].material as any).opacity = lam;
+            }
+        } else {
+            const stackIdx = i - 1;
+            const stackY = (2 - stackIdx) * stackSpacing;
+            const tx = this.lerp(0, treePos[i].x, lam);
+            const ty = this.lerp(stackY, treePos[i].y, lam);
 
-        if (this.stackCubes[i]) {
-            this.stackCubes[i].position.set(tx, ty, 0);
-        }
-        if (this.stackLabels[i]) {
-            this.stackLabels[i].position.set(tx, ty, 0.1);
-        }
-        if (this.treeNodes[i]) {
-            this.treeNodes[i].position.set(tx, ty, 0);
-        }
-        if (this.treeLabels[i]) {
-            this.treeLabels[i].position.set(tx, ty, 0.1);
+            if (this.stackCubes[stackIdx]) {
+                this.stackCubes[stackIdx].position.set(tx, ty, 0);
+            }
+            if (this.stackLabels[stackIdx]) {
+                this.stackLabels[stackIdx].position.set(tx, ty, 0.1);
+            }
+            if (this.treeNodes[i]) {
+                this.treeNodes[i].position.set(tx, ty, 0);
+                this.treeNodes[i].scale.set(1, 1, 1);
+                (this.treeNodes[i].material as any).opacity = 0.9;
+            }
+            if (this.treeLabels[i]) {
+                this.treeLabels[i].position.set(tx, ty, 0.1);
+                this.treeLabels[i].scale.set(1.4, 1.4, 1);
+                (this.treeLabels[i].material as any).opacity = 1;
+            }
         }
     }
   }
@@ -690,8 +728,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       const pos = new Float32Array(N * 3);
       const hlt = new Float32Array(N);
       const idx = new Float32Array(N).fill(-1);
-      const numCells = 7;
-      const values = [10, 25, 40, 5, 8, 99, 12];
+      const numCells = 5;
+      const values = [25, 40, 5, 8, 99];
       const cvs = document.createElement('canvas'); cvs.width = 200; cvs.height = 200;
       const ctx = cvs.getContext('2d')!;
       
@@ -699,7 +737,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       const ptsPerCell = Math.floor(N / numCells);
       for(let c=0; c<numCells; c++) {
         const points = this.getPointsForText(values[c].toString(), 0.8, cvs, ctx);
-        const cellYOffset = (3 - c) * 0.75;
+        const cellYOffset = (2 - c) * 0.75;
         for(let j=0; j<ptsPerCell; j++) {
             const p = points[j % points.length];
             pos[currentIdx * 3] = p.x; pos[currentIdx * 3 + 1] = p.y + cellYOffset; pos[currentIdx * 3 + 2] = 0;
@@ -867,15 +905,16 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     const s6 = getHash();
     const s7 = getInteractiveArray();
     const s8 = getStack(); // Interactive Stack (Duplicate of s2)
+    const s9 = getTree(); // Interactive Tree (Duplicate of s3)
 
     const emptyHlt = new Float32Array(this.N);
     const emptyCells = new Float32Array(this.N).fill(-1);
 
-    this.shapes = [s0, s1.pos, s2.pos, s3.pos, s4.pos, s5.pos, s6.pos, s7.pos, s8.pos];
-    this.highlights = [emptyHlt, s1.hlt, s2.hlt, s3.hlt, s4.hlt, s5.hlt, s6.hlt, s7.hlt, s8.hlt];
+    this.shapes = [s0, s1.pos, s2.pos, s3.pos, s4.pos, s5.pos, s6.pos, s7.pos, s8.pos, s9.pos];
+    this.highlights = [emptyHlt, s1.hlt, s2.hlt, s3.hlt, s4.hlt, s5.hlt, s6.hlt, s7.hlt, s8.hlt, s9.hlt];
     
     // Store cell indices for the interactive array (shape 7) and stack (shape 8)
-    (this as any).cellData = [emptyCells, emptyCells, s2.idx, emptyCells, emptyCells, emptyCells, emptyCells, s7.cellIdxs, s8.idx];
+    (this as any).cellData = [emptyCells, emptyCells, s2.idx, emptyCells, emptyCells, emptyCells, emptyCells, s7.cellIdxs, s8.idx, emptyCells];
 
     this.blastDir = new Float32Array(N * 3);
     for (let i = 0; i < N; i++) {
@@ -926,7 +965,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
         bool isActive = (uActiveCell1 >= 0.0 && abs(vCellIdx - uActiveCell1) < 0.1) || 
                         (uActiveCell2 >= 0.0 && abs(vCellIdx - uActiveCell2) < 0.1);
         if (isActive) {
-          float cellY = (3.0 - vCellIdx) * 0.75; // Centered for 7 cells
+          float cellY = (2.0 - vCellIdx) * 0.75; // Centered for 5 cells
           pos.y -= cellY;
           pos *= uActiveCellScale;
           pos.y += cellY;
@@ -1139,11 +1178,22 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       arrayOpacity = 1.0 - transitionLam;
       stackOpacity = transitionLam;
       this.morphArrayToStack(transitionLam);
-    } else if (this.morphSmooth >= 7.8) {
+    } else if (this.morphSmooth >= 7.8 && this.morphSmooth <= 8.2) {
       // Interactive Stack (Fully visible)
       arrayOpacity = 0;
       stackOpacity = 1.0;
       this.morphArrayToStack(1.0);
+    } else if (this.morphSmooth > 8.2 && this.morphSmooth < 8.8) {
+      // Interactive Transition (8 -> 9)
+      const transitionLam = (this.morphSmooth - 8.2) / 0.6;
+      stackOpacity = 1.0 - transitionLam;
+      treeOpacity = transitionLam;
+      this.morphStackToTree(transitionLam);
+    } else if (this.morphSmooth >= 8.8) {
+      // Interactive Tree (Fully visible)
+      stackOpacity = 0;
+      treeOpacity = 1.0;
+      this.morphStackToTree(1.0);
     }
     
     arrayOpacity = Math.max(0, Math.min(1, arrayOpacity));
@@ -1197,6 +1247,76 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       }
     });
 
+    this.stackCubes.forEach((cube, i) => {
+      const mat = cube.material as THREE.LineBasicMaterial;
+      const isActive = i === this.highlightedCellIndex && this.operationType !== 'none' && stackOpacity > 0;
+      
+      const desired = isActive ? targetColor : defaultColor;
+      mat.color.lerp(desired, 0.18);
+      
+      if (isActive && (this.operationType === 'insert' || this.operationType === 'delete')) {
+          cube.scale.set(this.activeCellScale, this.activeCellScale, this.activeCellScale);
+          mat.opacity = this.activeCellOpacity * stackOpacity * globalOpacity;
+      } else if (isActive) {
+          const pulse = 1.0 + Math.sin(performance.now() * 0.008) * 0.08;
+          cube.scale.set(pulse, pulse, pulse);
+          mat.opacity = Math.min(1.0, (stackOpacity * globalOpacity) + 0.15);
+      } else {
+          cube.scale.set(
+            this.lerp(cube.scale.x, 1.0, 0.15),
+            this.lerp(cube.scale.y, 1.0, 0.15),
+            this.lerp(cube.scale.z, 1.0, 0.15)
+          );
+          mat.opacity = stackOpacity * globalOpacity;
+      }
+
+      if (this.stackLabels[i]) {
+         const labelMat = this.stackLabels[i].material as THREE.SpriteMaterial;
+         if (isActive && (this.operationType === 'insert' || this.operationType === 'delete')) {
+             this.stackLabels[i].scale.set(1.4 * this.activeCellScale, 1.4 * this.activeCellScale, 1);
+             labelMat.opacity = this.activeCellOpacity * stackOpacity * globalOpacity;
+         } else {
+             this.stackLabels[i].scale.set(1.4, 1.4, 1);
+             labelMat.opacity = stackOpacity * globalOpacity;
+         }
+      }
+    });
+
+    this.treeNodes.forEach((node, i) => {
+      const mat = node.material as THREE.LineBasicMaterial;
+      const isActive = i === this.highlightedCellIndex && this.operationType !== 'none' && treeOpacity > 0;
+      
+      const desired = isActive ? targetColor : defaultColor;
+      mat.color.lerp(desired, 0.18);
+      
+      if (isActive && (this.operationType === 'insert' || this.operationType === 'delete')) {
+          node.scale.set(this.activeCellScale, this.activeCellScale, this.activeCellScale);
+          mat.opacity = this.activeCellOpacity * treeOpacity * globalOpacity;
+      } else if (isActive) {
+          const pulse = 1.0 + Math.sin(performance.now() * 0.008) * 0.08;
+          node.scale.set(pulse, pulse, pulse);
+          mat.opacity = Math.min(1.0, (treeOpacity * globalOpacity) + 0.15);
+      } else {
+          node.scale.set(
+            this.lerp(node.scale.x, 1.0, 0.15),
+            this.lerp(node.scale.y, 1.0, 0.15),
+            this.lerp(node.scale.z, 1.0, 0.15)
+          );
+          mat.opacity = treeOpacity * globalOpacity;
+      }
+
+      if (this.treeLabels[i]) {
+         const labelMat = this.treeLabels[i].material as THREE.SpriteMaterial;
+         if (isActive && (this.operationType === 'insert' || this.operationType === 'delete')) {
+             this.treeLabels[i].scale.set(1.4 * this.activeCellScale, 1.4 * this.activeCellScale, 1);
+             labelMat.opacity = this.activeCellOpacity * treeOpacity * globalOpacity;
+         } else {
+             this.treeLabels[i].scale.set(1.4, 1.4, 1);
+             labelMat.opacity = treeOpacity * globalOpacity;
+         }
+      }
+    });
+
     // Handle Tree Edge (Line) Opacity
     this.treeEdges.forEach(line => {
       if (line.material) (line.material as THREE.LineBasicMaterial).opacity = treeOpacity * globalOpacity * 0.8;
@@ -1207,9 +1327,12 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     const nearStack2 = Math.abs(this.morphSmooth - 2.0) < 0.5;
     const nearTree3 = Math.abs(this.morphSmooth - 3.0) < 0.5;
     const nearLL4 = Math.abs(this.morphSmooth - 4.0) < 0.5;
-    const nearQueue5 = Math.abs(this.morphSmooth - 5.0) < 0.5;
-    const nearArray7 = this.morphSmooth > 6.5;
-    if (nearArray1 || nearStack2 || nearTree3 || nearLL4 || nearQueue5 || nearArray7) {
+    const nearQueue5 = Math.abs(this.morphSmooth - 5.0) < 0.8;
+    const nearArray7 = this.morphSmooth > 5.8 && this.morphSmooth < 7.8;
+    const nearStack8 = this.morphSmooth > 7.8 && this.morphSmooth < 8.8;
+    const nearTree9 = this.morphSmooth > 8.8;
+    
+    if (nearArray1 || nearStack2 || nearTree3 || nearLL4 || nearQueue5 || nearArray7 || nearStack8 || nearTree9) {
         this.mat.uniforms['uGlobalOpacity'].value = 0.0;
     } else {
         this.mat.uniforms['uGlobalOpacity'].value = globalOpacity;
