@@ -32,11 +32,15 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   // Solid Meshes for Array & Stack
   private arrayGroup!: THREE.Group;
   private stackGroup!: THREE.Group;
+  private treeGroup!: THREE.Group;
   private arrayCubes: THREE.LineSegments[] = [];
   private stackCubes: THREE.LineSegments[] = [];
+  private treeNodes: THREE.LineSegments[] = [];
+  private treeEdges: THREE.Line[] = [];
   private arrayLabels: THREE.Sprite[] = [];
   private arrayIndices: THREE.Sprite[] = [];
   private stackLabels: THREE.Sprite[] = [];
+  private treeLabels: THREE.Sprite[] = [];
   private stackIndices: THREE.Sprite[] = [];
 
   private N = 25000; // Increased from 15000 for higher detail
@@ -90,7 +94,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
     this.initThree();
     this.createSolidArray(); 
-    this.createSolidStack(); // New: Create solid wireframe stack
+    this.createSolidStack(); 
+    this.createSolidTree(); // New: Create solid wireframe tree
     this.generateShapes();
     this.initParticles();
 
@@ -225,6 +230,56 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  private createSolidTree() {
+    this.treeGroup = new THREE.Group();
+    this.treeGroup.visible = false;
+    this.scene.add(this.treeGroup);
+
+    const numCells = 7;
+    const radius = 0.8;
+    const values = [12, 9, 40, 5, 10, 25, 99];
+    const positions = [
+      { x: 0, y: 1.8 },      // Root (0)
+      { x: -1.8, y: 0.4 },   // L1 (1)
+      { x: 1.8, y: 0.4 },    // L1 (2)
+      { x: -2.7, y: -1.0 },  // L2 (3)
+      { x: -0.9, y: -1.0 },  // L2 (4)
+      { x: 0.9, y: -1.0 },   // L2 (5)
+      { x: 2.7, y: -1.0 }    // L2 (6)
+    ];
+
+    const sphereGeo = new THREE.SphereGeometry(radius, 16, 16);
+    const edgesGeo = new THREE.EdgesGeometry(sphereGeo);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9 });
+
+    for (let i = 0; i < numCells; i++) {
+      const node = new THREE.LineSegments(edgesGeo, lineMat);
+      node.position.set(positions[i].x, positions[i].y, 0);
+      this.treeNodes.push(node);
+      this.treeGroup.add(node);
+
+      const valSprite = this.createLabelSprite(values[i].toString(), '#FFFFFF', 140); // White text as per image
+      valSprite.position.set(positions[i].x, positions[i].y, 0.1);
+      valSprite.scale.set(1.4, 1.4, 1);
+      this.treeLabels.push(valSprite);
+      this.treeGroup.add(valSprite);
+    }
+
+    // Add Edges (Lines)
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.8, linewidth: 2 });
+    const connections = [[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6]];
+    
+    connections.forEach(([p, c]) => {
+      const geo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(positions[p].x, positions[p].y, 0),
+        new THREE.Vector3(positions[c].x, positions[c].y, 0)
+      ]);
+      const line = new THREE.Line(geo, edgeMat);
+      this.treeEdges.push(line);
+      this.treeGroup.add(line);
+    });
+  }
+
   private getPointsForText(text: string, scale: number, cvs: HTMLCanvasElement, ctx: CanvasRenderingContext2D): {x: number, y: number}[] {
     const pts: {x: number, y: number}[] = [];
     ctx.fillStyle = '#000';
@@ -261,6 +316,14 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.stackCubes.forEach((cube, i) => {
         cube.position.set(0, (3 - i) * stackSpacing, 0);
         cube.scale.set(1, 1, 1);
+    });
+    this.treeNodes.forEach((node, i) => {
+        const treePos = [
+          { x: 0, y: 1.8 }, { x: -1.8, y: 0.4 }, { x: 1.8, y: 0.4 },
+          { x: -2.7, y: -1.0 }, { x: -0.9, y: -1.0 }, { x: 0.9, y: -1.0 }, { x: 2.7, y: -1.0 }
+        ];
+        node.position.set(treePos[i].x, treePos[i].y, 0);
+        node.scale.set(1, 1, 1);
     });
   }
 
@@ -300,6 +363,33 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
         if (this.stackLabels[i]) {
             this.stackLabels[i].position.set(tx, ty, 0.1);
             this.stackLabels[i].scale.set(1.4, 1.4, 1);
+        }
+    }
+  }
+
+  private morphStackToTree(lam: number) {
+    const stackSpacing = 1.5;
+    const treePos = [
+      { x: 0, y: 1.8 }, { x: -1.8, y: 0.4 }, { x: 1.8, y: 0.4 },
+      { x: -2.7, y: -1.0 }, { x: -0.9, y: -1.0 }, { x: 0.9, y: -1.0 }, { x: 2.7, y: -1.0 }
+    ];
+
+    for (let i = 0; i < 7; i++) {
+        const stackY = (3 - i) * stackSpacing;
+        const tx = this.lerp(0, treePos[i].x, lam);
+        const ty = this.lerp(stackY, treePos[i].y, lam);
+
+        if (this.stackCubes[i]) {
+            this.stackCubes[i].position.set(tx, ty, 0);
+        }
+        if (this.stackLabels[i]) {
+            this.stackLabels[i].position.set(tx, ty, 0.1);
+        }
+        if (this.treeNodes[i]) {
+            this.treeNodes[i].position.set(tx, ty, 0);
+        }
+        if (this.treeLabels[i]) {
+            this.treeLabels[i].position.set(tx, ty, 0.1);
         }
     }
   }
@@ -389,16 +479,15 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     const getTree = () => {
       const pos = new Float32Array(N * 3);
       const hlt = new Float32Array(N);
+      const values = [12, 9, 40, 5, 10, 25, 99];
       const nodes = [
-        { id: 0, val: 8, x: 0, y: 1.5, z: 0 },
-        { id: 1, val: 4, x: -1.2, y: 0.5, z: 0 },
-        { id: 2, val: 12, x: 1.2, y: 0.5, z: 0 },
-        { id: 3, val: 2, x: -1.8, y: -0.5, z: 0 },
-        { id: 4, val: 14, x: 1.8, y: -0.5, z: 0 },
-        { id: 5, val: 1, x: -2.4, y: -1.5, z: 0 },
-        { id: 6, val: 3, x: -1.2, y: -1.5, z: 0 },
-        { id: 7, val: 13, x: 1.2, y: -1.5, z: 0 },
-        { id: 8, val: 15, x: 2.4, y: -1.5, z: 0 },
+        { id: 0, val: values[0], x: 0, y: 1.8, z: 0 },
+        { id: 1, val: values[1], x: -1.8, y: 0.4, z: 0 },
+        { id: 2, val: values[2], x: 1.8, y: 0.4, z: 0 },
+        { id: 3, val: values[3], x: -2.7, y: -1.0, z: 0 },
+        { id: 4, val: values[4], x: -0.9, y: -1.0, z: 0 },
+        { id: 5, val: values[5], x: 0.9, y: -1.0, z: 0 },
+        { id: 6, val: values[6], x: 2.7, y: -1.0, z: 0 },
       ];
       
       const cvs = document.createElement('canvas'); cvs.width = 100; cvs.height = 100;
@@ -719,14 +808,17 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
     // Visibility Logic - Ensure both are visible during the transition to prevent "jumping"
     const isArraySection = (this.morphSmooth > 0.5 && this.morphSmooth < 1.8) || (this.morphSmooth > 6.5 && this.morphSmooth < 7.8);
-    const isStackSection = (this.morphSmooth > 1.2 && this.morphSmooth < 2.5) || (this.morphSmooth > 7.2);
+    const isStackSection = (this.morphSmooth > 1.2 && this.morphSmooth < 2.8) || (this.morphSmooth > 7.2);
+    const isTreeSection = (this.morphSmooth > 2.2 && this.morphSmooth < 3.8);
     
     this.arrayGroup.visible = isArraySection;
     this.stackGroup.visible = isStackSection;
+    this.treeGroup.visible = isTreeSection;
     
     // Fade Logic
     let arrayOpacity = 0;
     let stackOpacity = 0;
+    let treeOpacity = 0;
 
     // NEW: Continuous visibility logic for Array and Stack
     if (this.morphSmooth >= 0.5 && this.morphSmooth <= 1.2) {
@@ -740,11 +832,22 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       arrayOpacity = 1.0 - transitionLam;
       stackOpacity = transitionLam;
       this.morphArrayToStack(transitionLam);
-    } else if (this.morphSmooth >= 1.8 && this.morphSmooth <= 2.5) {
+    } else if (this.morphSmooth >= 1.8 && this.morphSmooth <= 2.2) {
       // Stack is solid and fully visible
       arrayOpacity = 0;
       stackOpacity = 1.0;
       this.morphArrayToStack(1.0);
+    } else if (this.morphSmooth > 2.2 && this.morphSmooth < 2.8) {
+      // TRANSITION: Stack morphs into Tree
+      const transitionLam = (this.morphSmooth - 2.2) / 0.6;
+      stackOpacity = 1.0 - transitionLam;
+      treeOpacity = transitionLam;
+      this.morphStackToTree(transitionLam);
+    } else if (this.morphSmooth >= 2.8 && this.morphSmooth <= 3.8) {
+      // Tree is solid and fully visible
+      stackOpacity = 0;
+      treeOpacity = 1.0;
+      this.morphStackToTree(1.0);
     } else if (this.morphSmooth >= 6.5 && this.morphSmooth <= 7.2) {
       // Interactive Array (Fully visible)
       arrayOpacity = 1.0;
@@ -772,12 +875,21 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.stackGroup.children.forEach((child: any) => {
       if (child.material) child.material.opacity = stackOpacity * globalOpacity;
     });
+    this.treeGroup.children.forEach((child: any) => {
+      if (child.material) child.material.opacity = treeOpacity * globalOpacity;
+    });
 
-    // Aggressively hide particles when in solid Array or Stack sections
+    // Handle Tree Edge (Line) Opacity
+    this.treeEdges.forEach(line => {
+      if (line.material) (line.material as THREE.LineBasicMaterial).opacity = treeOpacity * globalOpacity * 0.8;
+    });
+
+    // Aggressively hide particles when in solid Array, Stack or Tree sections
     const nearArray1 = Math.abs(this.morphSmooth - 1.0) < 0.5;
     const nearStack2 = Math.abs(this.morphSmooth - 2.0) < 0.5;
+    const nearTree3 = Math.abs(this.morphSmooth - 3.0) < 0.5;
     const nearArray7 = this.morphSmooth > 6.5;
-    if (nearArray1 || nearStack2 || nearArray7) {
+    if (nearArray1 || nearStack2 || nearTree3 || nearArray7) {
         this.mat.uniforms['uGlobalOpacity'].value = 0.0;
     } else {
         this.mat.uniforms['uGlobalOpacity'].value = globalOpacity;
@@ -793,11 +905,13 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.pts.position.x = this.ptsPosSmooth + mx;
     this.arrayGroup.position.x = this.ptsPosSmooth + mx;
     this.stackGroup.position.x = this.ptsPosSmooth + mx;
+    this.treeGroup.position.x = this.ptsPosSmooth + mx;
 
     this.posYSmooth = this.lerp(this.posYSmooth, this.posYTarget, 0.08);
     this.pts.position.y = this.posYSmooth + my;
     this.arrayGroup.position.y = this.posYSmooth + my;
     this.stackGroup.position.y = this.posYSmooth + my;
+    this.treeGroup.position.y = this.posYSmooth + my;
 
     // 6. Scroll-driven scale
     this.scaleSmooth = this.lerp(this.scaleSmooth, this.scaleTarget, 0.08);
@@ -808,6 +922,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     const solidScale = finalScale * 0.85; 
     this.arrayGroup.scale.set(solidScale, solidScale, solidScale);
     this.stackGroup.scale.set(solidScale, solidScale, solidScale);
+    this.treeGroup.scale.set(solidScale, solidScale, solidScale);
 
     this.camera.position.x = this.mouse.x * 0.3;
     this.camera.position.y = -this.mouse.y * 0.3;
