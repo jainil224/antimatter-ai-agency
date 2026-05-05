@@ -198,12 +198,12 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.stackGroup.visible = false;
     this.scene.add(this.stackGroup);
 
-    const numCells = 6;
-    const width = 3.2; // Wide and thick as per image
-    const height = 1.3; 
-    const depth = 2.0; 
-    const spacing = 1.4; 
-    const values = [40, 24, 22, 30, 20, 10]; // Matches image exactly
+    const numCells = 7;
+    const width = 1.42; // Matches Array cube size
+    const height = 1.42; 
+    const depth = 1.42; 
+    const spacing = 1.5; 
+    const values = [10, 25, 40, 5, 8, 99, 12]; // Matches Array values
 
     const boxGeo = new THREE.BoxGeometry(width, height, depth);
     const edgesGeo = new THREE.EdgesGeometry(boxGeo);
@@ -211,15 +211,15 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
     for (let i = 0; i < numCells; i++) {
       const cube = new THREE.LineSegments(edgesGeo, lineMat);
-      const y = ((numCells - 1) / 2 - i) * spacing;
+      const y = (3 - i) * spacing; // Centered for 7 cells
       cube.position.set(0, y, 0);
       this.stackCubes.push(cube);
       this.stackGroup.add(cube);
 
       // Value Label (Yellow)
-      const valSprite = this.createLabelSprite(values[i].toString(), '#FACC15', 120);
+      const valSprite = this.createLabelSprite(values[i].toString(), '#FACC15', 140);
       valSprite.position.set(0, y, 0.1);
-      valSprite.scale.set(1.2, 1.2, 1);
+      valSprite.scale.set(1.4, 1.4, 1);
       this.stackLabels.push(valSprite);
       this.stackGroup.add(valSprite);
     }
@@ -257,30 +257,30 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
         cube.rotation.set(0, 0, 0);
         cube.scale.set(1, 1, 1);
     });
-    const stackSpacing = 1.4;
+    const stackSpacing = 1.5;
     this.stackCubes.forEach((cube, i) => {
-        cube.position.set(0, (2.5 - i) * stackSpacing, 0);
+        cube.position.set(0, (3 - i) * stackSpacing, 0);
         cube.scale.set(1, 1, 1);
     });
   }
 
   private morphArrayToStack(lam: number) {
     const arraySpacing = 1.5;
-    const stackSpacing = 1.4;
-    const stackWidth = 3.2;
-    const stackHeight = 1.3;
+    const stackSpacing = 1.5;
+    const stackWidth = 1.42;
+    const stackHeight = 1.42;
     const arraySize = 1.42;
 
-    // We morph the first 6 cubes from Array into Stack positions
-    for (let i = 0; i < 6; i++) {
+    // We morph all 7 cubes from Array into Stack positions
+    for (let i = 0; i < 7; i++) {
         const arrayX = (i - 3) * arraySpacing;
-        const stackY = (2.5 - i) * stackSpacing;
+        const stackY = (3 - i) * stackSpacing;
 
         // Position interpolation
         const tx = this.lerp(arrayX, 0, lam);
         const ty = this.lerp(0, stackY, lam);
         
-        // Shape interpolation (Array is square, Stack is rectangular)
+        // Shape interpolation (Both are now cubes)
         const tw = this.lerp(1, stackWidth / arraySize, lam);
         const th = this.lerp(1, stackHeight / arraySize, lam);
 
@@ -290,7 +290,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
         }
         if (this.arrayLabels[i]) {
             this.arrayLabels[i].position.set(tx, ty, 0.1);
-            this.arrayLabels[i].scale.set(this.lerp(1.4, 1.2, lam), this.lerp(1.4, 1.2, lam), 1);
+            this.arrayLabels[i].scale.set(1.4, 1.4, 1);
         }
         
         if (this.stackCubes[i]) {
@@ -299,17 +299,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
         }
         if (this.stackLabels[i]) {
             this.stackLabels[i].position.set(tx, ty, 0.1);
-            this.stackLabels[i].scale.set(this.lerp(1.4, 1.8, lam), this.lerp(1.4, 1.8, lam), 1);
+            this.stackLabels[i].scale.set(1.4, 1.4, 1);
         }
-    }
-    
-    // Fade out the 7th cube of the array
-    if (this.arrayCubes[6]) {
-        this.arrayCubes[6].position.x = (6 - 3) * arraySpacing + (lam * 2); 
-        this.arrayCubes[6].scale.set(1 - lam, 1 - lam, 1 - lam);
-    }
-    if (this.arrayLabels[6]) {
-        this.arrayLabels[6].scale.set(1 - lam, 1 - lam, 1 - lam);
     }
   }
 
@@ -375,8 +366,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       const pos = new Float32Array(N * 3);
       const hlt = new Float32Array(N);
       const idx = new Float32Array(N).fill(-1);
-      const numCells = 6;
-      const values = [40, 55, 22, 30, 20, 10];
+      const numCells = 7;
+      const values = [10, 25, 40, 5, 8, 99, 12];
       const cvs = document.createElement('canvas'); cvs.width = 200; cvs.height = 200;
       const ctx = cvs.getContext('2d')!;
       
@@ -384,7 +375,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       const ptsPerCell = Math.floor(N / numCells);
       for(let c=0; c<numCells; c++) {
         const points = this.getPointsForText(values[c].toString(), 0.8, cvs, ctx);
-        const cellYOffset = ((numCells - 1) / 2 - c) * 0.7;
+        const cellYOffset = (3 - c) * 0.75;
         for(let j=0; j<ptsPerCell; j++) {
             const p = points[j % points.length];
             pos[currentIdx * 3] = p.x; pos[currentIdx * 3 + 1] = p.y + cellYOffset; pos[currentIdx * 3 + 2] = 0;
@@ -612,7 +603,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
         bool isActive = (uActiveCell1 >= 0.0 && abs(vCellIdx - uActiveCell1) < 0.1) || 
                         (uActiveCell2 >= 0.0 && abs(vCellIdx - uActiveCell2) < 0.1);
         if (isActive) {
-          float cellY = (2.5 - vCellIdx) * 0.7; // Derived from getStack logic
+          float cellY = (3.0 - vCellIdx) * 0.75; // Centered for 7 cells
           pos.y -= cellY;
           pos *= uActiveCellScale;
           pos.y += cellY;
