@@ -178,7 +178,7 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
         onUpdate: (self) => {
           if (threeState) {
             const p = self.progress;
-            threeState.ptsPosTarget = -5.2;
+            threeState.ptsPosTarget = 0;
             threeState.posYTarget = -0.4;
             threeState.scaleTarget = 0.95;
 
