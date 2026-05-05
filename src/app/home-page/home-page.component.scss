@@ -13,11 +13,11 @@
   background: transparent;
 }
 .interactive-content-container {
-  max-width: 1400px; // Slightly wider for more space
+  max-width: 1400px;
   width: 100%;
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr; // More room for the animation on the left
-  gap: 100px; // Wider gap
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 100px;
   align-items: center;
 }
 .animation-spacer {
@@ -25,6 +25,8 @@
 }
 .interactive-main-content {
   grid-column: 2;
+  width: 100%;
+  max-width: 600px;
 }
 .interactive-header {
   .interactive-label {
@@ -91,6 +93,7 @@
 }
 .stats-grid {
   grid-column: 1 / span 2;
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;

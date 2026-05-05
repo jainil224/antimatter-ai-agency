@@ -25,10 +25,11 @@ import ScrollTrigger from 'gsap/ScrollTrigger';
             <span class="filename">array_ops.py</span>
           </div>
           <div class="code-view">
-            <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">search</span>(arr, target):</div>
-            <div class="line" [class.active]="activeStep >= 1 && activeStep <= 10"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">for</span> i <span class="keyword">in</span> <span class="func">range</span>(<span class="func">len</span>(arr)):</div>
-            <div class="line" [class.active]="activeStep > 0 && activeStep <= 10"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Accessing index [{{ activeStep - 1 >= 0 ? activeStep - 1 : 0 }}]</span></div>
-            <div class="line" [class.active]="activeStep === 11"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> arr[i] == target: <span class="keyword">return</span> i</div>
+            <div class="line" [class.active]="activeStep === 0"><span>1</span> <span class="keyword">def</span> <span class="func">twoSum</span>(nums, target):</div>
+            <div class="line" [class.active]="activeStep >= 1 && activeStep <= 4"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">for</span> i <span class="keyword">in</span> <span class="func">range</span>(<span class="func">len</span>(nums)):</div>
+            <div class="line" [class.active]="activeStep >= 2 && activeStep <= 4"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">for</span> j <span class="keyword">in</span> <span class="func">range</span>(i + 1, <span class="func">len</span>(nums)):</div>
+            <div class="line" [class.active]="activeStep === 5"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> nums[i] + nums[j] == target:</div>
+            <div class="line" [class.active]="activeStep === 6"><span>5</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> [i, j]</div>
           </div>
         </div>
 

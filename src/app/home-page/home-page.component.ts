@@ -51,7 +51,7 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
         scrub: true,
         onUpdate: (self) => {
           if (threeState) {
-            threeState.ptsPosTarget = 3.2 - self.progress * 7.7;
+            threeState.ptsPosTarget = 3.2 - self.progress * 8.5; // Shifted further left
             threeState.scrollShapeTarget = self.progress; 
           }
         }
@@ -119,7 +119,7 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
             scrub: true,
             onUpdate: (self) => {
               if (threeState) {
-                threeState.ptsPosTarget = -4.5;
+                threeState.ptsPosTarget = -5.5;
                 threeState.scrollShapeTarget = 1 + self.progress * (numCards - 1);
               }
               highlightCenteredCard();
@@ -133,7 +133,7 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
       const entranceAnim = gsap.fromTo('#services-header', 
         { opacity: 0, x: '-40vw', y: '30vh', scale: 1.4 },
         { 
-          opacity: 1, x: 0, y: 0, scale: 1, power: 'power3.out', duration: 1.4,
+          opacity: 1, x: 0, y: 0, scale: 1, ease: 'power3.out', duration: 1.4,
           scrollTrigger: {
             trigger: '.services-section',
             start: 'top 75%'
@@ -146,7 +146,7 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
       const cardsAnim = gsap.fromTo('.service-card-wrapper',
         { opacity: 0, y: 60, scale: 0.94 },
         {
-          opacity: 1, y: 0, scale: 1, power: 'power3.out', duration: 0.8, stagger: 0.12,
+          opacity: 1, y: 0, scale: 1, ease: 'power3.out', duration: 0.8, stagger: 0.12,
           scrollTrigger: {
             trigger: '.services-section',
             start: 'top 65%'
@@ -178,7 +178,7 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
         onUpdate: (self) => {
           if (threeState) {
             const p = self.progress;
-            threeState.ptsPosTarget = -4.2;
+            threeState.ptsPosTarget = -5.2;
             threeState.posYTarget = -0.4;
             threeState.scaleTarget = 0.95;
 
@@ -197,13 +197,39 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                 } else {
                   const opP = (localP - 0.05) / 0.95;
                   if (opP < 0.33) {
-                    this.activeOp = 'Search';
-                    this.opDescription = 'Linear Search: Scanning each memory address...';
-                    this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(1)';
-                    const step = Math.floor((opP / 0.33) * 11);
-                    this.activeStep = step;
-                    this.opStatus = 'Searching Index #' + (step-1 >= 0 ? step-1 : 0);
-                    threeState.interactiveCell = step - 1;
+                    this.activeOp = 'Two Sum';
+                    this.opDescription = 'Two Sum: Finding two numbers that add up to target (9)...';
+                    this.timeComplexity = 'O(n²)'; this.spaceComplexity = 'O(1)';
+                    const localStep = Math.floor((opP / 0.33) * 8);
+                    this.activeStep = localStep;
+                    
+                    if (localStep === 0) {
+                      this.opStatus = 'Starting Two Sum...';
+                      threeState.interactiveCells = [-1, -1];
+                    } else if (localStep === 1) {
+                      this.opStatus = 'Selecting i = 0 (Value: 2)';
+                      threeState.interactiveCells = [0, -1];
+                    } else if (localStep === 2) {
+                      this.opStatus = 'Checking j = 1 (Value: 7)';
+                      threeState.interactiveCells = [0, 1];
+                    } else if (localStep === 3) {
+                      this.opStatus = 'Checking j = 2 (Value: 11)';
+                      threeState.interactiveCells = [0, 2];
+                    } else if (localStep === 4) {
+                      this.opStatus = 'Checking j = 3 (Value: 15)';
+                      threeState.interactiveCells = [0, 3];
+                    } else if (localStep === 5) {
+                      this.opStatus = 'Selecting i = 1 (Value: 7)';
+                      threeState.interactiveCells = [1, -1];
+                    } else if (localStep === 6) {
+                      this.opStatus = 'Checking i=0 + j=1 = 9?';
+                      threeState.interactiveCells = [0, 1];
+                      threeState.activeHighlightColor.setHex(0xFACC15); // Yellow for compare
+                    } else {
+                      this.opStatus = 'MATCH FOUND: [0, 1]';
+                      threeState.interactiveCells = [0, 1];
+                      threeState.activeHighlightColor.setHex(0x22D3EE); // Cyan for found
+                    }
                   } else if (opP < 0.66) {
                     this.activeOp = 'Insertion';
                     this.opDescription = 'Insertion: Shifting elements for new data...';
@@ -214,15 +240,15 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                     
                     if (step <= 1) {
                       this.opStatus = 'Initializing...';
-                      threeState.interactiveCell = -1;
+                      threeState.interactiveCells = [-1, -1];
                     } else if (step <= 8) {
                       // Shifting phase (highlighting 9 down to 4)
                       const shiftIdx = 9 - (step - 2);
                       this.opStatus = `Shifting Index ${shiftIdx} → ${shiftIdx + 1}`;
-                      threeState.interactiveCell = shiftIdx;
+                      threeState.interactiveCells = [shiftIdx, -1];
                     } else {
                       this.opStatus = 'Inserting at Index #4';
-                      threeState.interactiveCell = 4;
+                      threeState.interactiveCells = [4, -1];
                     }
                   } else {
                     this.activeOp = 'Deletion';
@@ -234,15 +260,15 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                     
                     if (step <= 2) {
                       this.opStatus = 'Removing Index #2';
-                      threeState.interactiveCell = 2;
+                      threeState.interactiveCells = [2, -1];
                     } else if (step <= 10) {
                       // Shift back phase (highlighting 3 up to 9)
                       const shiftIdx = step - 1;
                       this.opStatus = `Shifting Index ${shiftIdx} → ${shiftIdx - 1}`;
-                      threeState.interactiveCell = shiftIdx;
+                      threeState.interactiveCells = [shiftIdx, -1];
                     } else {
                       this.opStatus = 'Clean up';
-                      threeState.interactiveCell = -1;
+                      threeState.interactiveCells = [-1, -1];
                     }
                   }
                 }
@@ -253,13 +279,13 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                 this.activeOp = 'Morphing';
                 this.opDescription = 'Converting Array to Stack (LIFO)...';
                 this.opStatus = 'Restructuring...';
-                threeState.scrollShapeTarget = 2; 
-                threeState.interactiveCell = -1;
+                threeState.scrollShapeTarget = 8; 
+                threeState.interactiveCells = [-1, -1];
               }
               // --- PHASE 3: STACK OPERATIONS (0.50 - 1.0) ---
               else {
                 this.activeDS = 'Stack';
-                threeState.scrollShapeTarget = 2; 
+                threeState.scrollShapeTarget = 8; 
                 threeState.blastProgress = 0; // Explicitly kill any blast during simulation
                 
                 const localP = (p - 0.50) / 0.50;
@@ -273,7 +299,7 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                   this.opStatus = 'Pushing 10 to TOP';
                   
                   const pPush = Math.min(1, step / 2.5);
-                  threeState.interactiveCell = 0;
+                  threeState.interactiveCells = [0, -1];
                   threeState.activeHighlightColor.setHex(0x22D3EE); 
                   threeState.activeCellScale = 0.3 + 0.7 * pPush;
                   threeState.activeCellOpacity = pPush;
@@ -284,7 +310,7 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                   this.opStatus = 'Popping TOP element';
                   
                   const pPop = Math.min(1, (step - 3) / 2.5);
-                  threeState.interactiveCell = 0;
+                  threeState.interactiveCells = [0, -1];
                   threeState.activeHighlightColor.setHex(0xF87171); // Explicit Red for Pop
                   threeState.activeCellScale = 1.0 - 0.4 * pPop;
                   threeState.activeCellOpacity = 1.0 - pPop;
@@ -295,7 +321,7 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                   const searchIdx = Math.min(3, step - 6);
                   this.opStatus = `Searching block #${searchIdx}`;
                   
-                  threeState.interactiveCell = searchIdx;
+                  threeState.interactiveCells = [searchIdx, -1];
                   threeState.activeHighlightColor.setHex(0xFACC15);
                   threeState.activeCellScale = 1.05; // Subtle pop when searching
                   threeState.activeCellOpacity = 1.0;
@@ -305,7 +331,7 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                   this.timeComplexity = 'O(1)'; this.spaceComplexity = 'O(1)';
                   this.opStatus = 'Peeking at TOP: 40';
                   
-                  threeState.interactiveCell = 0;
+                  threeState.interactiveCells = [0, -1];
                   threeState.activeHighlightColor.setHex(0xA855F7);
                   threeState.activeCellScale = 1.0;
                   threeState.activeCellOpacity = 1.0;
@@ -315,8 +341,8 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
             });
           }
         },
-        onLeave: () => { if (threeState) threeState.interactiveCell = -1; },
-        onLeaveBack: () => { if (threeState) threeState.interactiveCell = -1; }
+        onLeave: () => { if (threeState) threeState.interactiveCells = [-1, -1]; },
+        onLeaveBack: () => { if (threeState) threeState.interactiveCells = [-1, -1]; }
       }));
 
       ScrollTrigger.refresh();

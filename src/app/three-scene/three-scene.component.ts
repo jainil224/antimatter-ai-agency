@@ -29,6 +29,16 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   private scene!: THREE.Scene;
   private animFrameId: number = 0;
 
+  // Solid Meshes for Array & Stack
+  private arrayGroup!: THREE.Group;
+  private stackGroup!: THREE.Group;
+  private arrayCubes: THREE.LineSegments[] = [];
+  private stackCubes: THREE.LineSegments[] = [];
+  private arrayLabels: THREE.Sprite[] = [];
+  private arrayIndices: THREE.Sprite[] = [];
+  private stackLabels: THREE.Sprite[] = [];
+  private stackIndices: THREE.Sprite[] = [];
+
   private N = 25000; // Increased from 15000 for higher detail
   private pts!: THREE.Points;
   private mat!: THREE.ShaderMaterial;
@@ -60,7 +70,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   private mouse = new THREE.Vector2(-10, -10);
 
   public scrollShapeTarget = 0;
-  public interactiveCell = -1; // -1 means no highlight
+  public interactiveCells: number[] = [-1, -1]; // Supports up to 2 highlights
   public activeHighlightColor = new THREE.Color(0xFACC15); 
   public activeCellOpacity = 1.0;
   public activeCellScale = 1.0;
@@ -79,6 +89,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     if (!isPlatformBrowser(this.platformId)) return;
 
     this.initThree();
+    this.createSolidArray(); 
+    this.createSolidStack(); // New: Create solid wireframe stack
     this.generateShapes();
     this.initParticles();
 
@@ -120,45 +132,218 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.camera.position.set(3, 0, 9);
 
     this.scene = new THREE.Scene();
+    
+    // Lighting from demo scene (Keeping the lights, removing the grid)
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(5, 10, 5);
+    this.scene.add(dirLight);
+  }
+
+  private createSolidArray() {
+    this.arrayGroup = new THREE.Group();
+    this.arrayGroup.visible = false;
+    this.scene.add(this.arrayGroup);
+
+    const numCells = 7;
+    const size = 1.42; // Subtle gap for better definition
+    const spacing = 1.5;
+    const values = [10, 25, 40, 5, 8, 99, 12];
+
+    const boxGeo = new THREE.BoxGeometry(size, size, size);
+    const edgesGeo = new THREE.EdgesGeometry(boxGeo);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9, linewidth: 2 });
+
+    for (let i = 0; i < numCells; i++) {
+      const cube = new THREE.LineSegments(edgesGeo, lineMat);
+      const x = (i - (numCells - 1) / 2) * spacing;
+      cube.position.set(x, 0, 0);
+      this.arrayCubes.push(cube);
+      this.arrayGroup.add(cube);
+
+      // Value Label (Yellow) - Centered and Bold
+      const valSprite = this.createLabelSprite(values[i].toString(), '#FACC15', 140);
+      valSprite.position.set(x, 0, 0.1); // Slightly forward to avoid clipping
+      valSprite.scale.set(1.4, 1.4, 1);
+      this.arrayLabels.push(valSprite);
+      this.arrayGroup.add(valSprite);
+
+      // "INDEX" Header - Small and Grey
+      const headerLabel = this.createLabelSprite('INDEX', '#94A3B8', 50);
+      headerLabel.position.set(x, 1.45, 0);
+      headerLabel.scale.set(0.5, 0.5, 1);
+      this.arrayGroup.add(headerLabel);
+    }
+  }
+
+  private createLabelSprite(text: string, color: string, fontSize: number): THREE.Sprite {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    canvas.width = 256;
+    canvas.height = 256;
+    ctx.fillStyle = color;
+    ctx.font = `bold ${fontSize}px "Outfit", sans-serif`; // Sharper premium font
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 128, 128);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.anisotropy = 16; // Max sharpness
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+    return new THREE.Sprite(mat);
+  }
+
+  private createSolidStack() {
+    this.stackGroup = new THREE.Group();
+    this.stackGroup.visible = false;
+    this.scene.add(this.stackGroup);
+
+    const numCells = 6;
+    const width = 3.2; // Wide and thick as per image
+    const height = 1.3; 
+    const depth = 2.0; 
+    const spacing = 1.4; 
+    const values = [40, 24, 22, 30, 20, 10]; // Matches image exactly
+
+    const boxGeo = new THREE.BoxGeometry(width, height, depth);
+    const edgesGeo = new THREE.EdgesGeometry(boxGeo);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9, linewidth: 2 });
+
+    for (let i = 0; i < numCells; i++) {
+      const cube = new THREE.LineSegments(edgesGeo, lineMat);
+      const y = ((numCells - 1) / 2 - i) * spacing;
+      cube.position.set(0, y, 0);
+      this.stackCubes.push(cube);
+      this.stackGroup.add(cube);
+
+      // Value Label (Yellow)
+      const valSprite = this.createLabelSprite(values[i].toString(), '#FACC15', 120);
+      valSprite.position.set(0, y, 0.1);
+      valSprite.scale.set(1.2, 1.2, 1);
+      this.stackLabels.push(valSprite);
+      this.stackGroup.add(valSprite);
+    }
+  }
+
+  private getPointsForText(text: string, scale: number, cvs: HTMLCanvasElement, ctx: CanvasRenderingContext2D): {x: number, y: number}[] {
+    const pts: {x: number, y: number}[] = [];
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, cvs.width, cvs.height);
+    ctx.fillStyle = '#fff';
+    
+    const lines = text.split('\n');
+    lines.forEach((line, i) => {
+        ctx.fillText(line, cvs.width / 2, cvs.height / 2 + (i - (lines.length - 1) / 2) * (cvs.height / 4));
+    });
+    
+    const imgData = ctx.getImageData(0, 0, cvs.width, cvs.height).data;
+    for (let y = 0; y < cvs.height; y += 2) {
+      for (let x = 0; x < cvs.width; x += 2) {
+        if (imgData[(y * cvs.width + x) * 4] > 128) {
+          pts.push({ 
+            x: (x - cvs.width / 2) * 0.01 * scale, 
+            y: -(y - cvs.height / 2) * 0.01 * scale 
+          });
+        }
+      }
+    }
+    return pts.length > 0 ? pts : [{ x: 0, y: 0 }];
+  }
+
+  private resetSolidPositions() {
+    const arraySpacing = 1.5;
+    this.arrayCubes.forEach((cube, i) => {
+        cube.position.set((i - 3) * arraySpacing, 0, 0);
+        cube.rotation.set(0, 0, 0);
+        cube.scale.set(1, 1, 1);
+    });
+    const stackSpacing = 1.4;
+    this.stackCubes.forEach((cube, i) => {
+        cube.position.set(0, (2.5 - i) * stackSpacing, 0);
+        cube.scale.set(1, 1, 1);
+    });
+  }
+
+  private morphArrayToStack(lam: number) {
+    const arraySpacing = 1.5;
+    const stackSpacing = 1.4;
+    const stackWidth = 3.2;
+    const stackHeight = 1.3;
+    const arraySize = 1.42;
+
+    // We morph the first 6 cubes from Array into Stack positions
+    for (let i = 0; i < 6; i++) {
+        const arrayX = (i - 3) * arraySpacing;
+        const stackY = (2.5 - i) * stackSpacing;
+
+        // Position interpolation
+        const tx = this.lerp(arrayX, 0, lam);
+        const ty = this.lerp(0, stackY, lam);
+        
+        // Shape interpolation (Array is square, Stack is rectangular)
+        const tw = this.lerp(1, stackWidth / arraySize, lam);
+        const th = this.lerp(1, stackHeight / arraySize, lam);
+
+        if (this.arrayCubes[i]) {
+            this.arrayCubes[i].position.set(tx, ty, 0);
+            this.arrayCubes[i].scale.set(tw, th, 1);
+        }
+        if (this.arrayLabels[i]) {
+            this.arrayLabels[i].position.set(tx, ty, 0.1);
+            this.arrayLabels[i].scale.set(this.lerp(1.4, 1.2, lam), this.lerp(1.4, 1.2, lam), 1);
+        }
+        
+        if (this.stackCubes[i]) {
+            this.stackCubes[i].position.set(tx, ty, 0);
+            this.stackCubes[i].scale.set(tw, th, 1);
+        }
+        if (this.stackLabels[i]) {
+            this.stackLabels[i].position.set(tx, ty, 0.1);
+            this.stackLabels[i].scale.set(this.lerp(1.4, 1.8, lam), this.lerp(1.4, 1.8, lam), 1);
+        }
+    }
+    
+    // Fade out the 7th cube of the array
+    if (this.arrayCubes[6]) {
+        this.arrayCubes[6].position.x = (6 - 3) * arraySpacing + (lam * 2); 
+        this.arrayCubes[6].scale.set(1 - lam, 1 - lam, 1 - lam);
+    }
+    if (this.arrayLabels[6]) {
+        this.arrayLabels[6].scale.set(1 - lam, 1 - lam, 1 - lam);
+    }
   }
 
   private generateShapes() {
     const N = this.N;
+    const cvs = document.createElement('canvas');
+    cvs.width = 500;
+    cvs.height = 500;
+    const ctx = cvs.getContext('2d')!;
 
-    // 1 & 7. Sphere
     const getSphere = () => {
       const pos = new Float32Array(N * 3);
       for (let i = 0; i < N; i++) {
-        const u = Math.random();
-        const v = Math.random();
-        const theta = u * 2.0 * Math.PI;
-        const phi = Math.acos(2.0 * v - 1.0);
-        let r = 2.2;
-        if (Math.random() < 0.15) r *= Math.random();
-        pos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-        pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-        pos[i * 3 + 2] = r * Math.cos(phi);
+        pos[i * 3] = 0; pos[i * 3 + 1] = 0; pos[i * 3 + 2] = 0;
       }
       return pos;
     };
 
-    // 2. Array
     const getArray = () => {
       const pos = new Float32Array(N * 3);
       const hlt = new Float32Array(N);
-      const numCells = 10;
-      const size = 0.8;
-      const values = [10, 25, 40, 5, 8, 99, 12, 33, 41, 7];
+      const numCells = 4;
+      const size = 1.2;
+      const values = [2, 7, 11, 15];
       
       const textPointsByCell: {x: number, y: number}[] = [];
       const cvs = document.createElement('canvas');
-      cvs.width = 300; cvs.height = 450; // Even higher resolution
+      cvs.width = 300; cvs.height = 450;
       const ctx = cvs.getContext('2d')!;
       
       for(let c=0; c<numCells; c++) {
         ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 300, 450);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 36px monospace'; // Monospace is often sharper
+        ctx.font = 'bold 36px monospace';
         ctx.textAlign = 'center'; ctx.textBaseline = 'top';
         ctx.fillText('INDEX', 150, 20);
         ctx.font = 'bold 60px monospace';
@@ -179,309 +364,98 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       }
       
       for (let i = 0; i < N; i++) {
-        const r = Math.random();
-        let px, py, pz, h = 0, cellIdx = -1;
-        
-        if (r < 0.8 && textPointsByCell.length > 0) { // Maximum density
-          const p = textPointsByCell[Math.floor(Math.random() * textPointsByCell.length)];
-          px = p.x; py = p.y; pz = 0;
-          h = 1.0;
-          // Extract cell from x position roughly
-          cellIdx = Math.floor((px / size) + (numCells / 2));
-        } else {
-          const cell = Math.floor(Math.random() * numCells);
-          cellIdx = cell;
-          const cellXOffset = (cell - (numCells - 1) / 2) * size;
-          const edge = Math.floor(Math.random() * 12);
-          px = (Math.random() - 0.5) * size;
-          py = (Math.random() - 0.5) * size;
-          pz = (Math.random() - 0.5) * size;
-          // (edge logic remains same)
-          if (edge === 0) { py = size/2; pz = size/2; }
-          else if (edge === 1) { py = size/2; pz = -size/2; }
-          else if (edge === 2) { py = -size/2; pz = size/2; }
-          else if (edge === 3) { py = -size/2; pz = -size/2; }
-          else if (edge === 4) { px = size/2; pz = size/2; }
-          else if (edge === 5) { px = size/2; pz = -size/2; }
-          else if (edge === 6) { px = -size/2; pz = size/2; }
-          else if (edge === 7) { px = -size/2; pz = -size/2; }
-          else if (edge === 8) { px = size/2; py = size/2; }
-          else if (edge === 9) { px = size/2; py = -size/2; }
-          else if (edge === 10) { px = -size/2; py = size/2; }
-          else if (edge === 11) { px = -size/2; py = -size/2; }
-          px += cellXOffset;
-        }
-        pos[i * 3] = px;
-        pos[i * 3 + 1] = py;
-        pos[i * 3 + 2] = pz;
-        hlt[i] = h;
-        // Store cellIdx in a custom way or attribute (I'll add another array for this)
+        const p = textPointsByCell[i % textPointsByCell.length];
+        pos[i * 3] = p.x; pos[i * 3 + 1] = p.y; pos[i * 3 + 2] = 0;
+        hlt[i] = 1.0;
       }
       return { pos, hlt };
     };
 
-    // 3. Stack
     const getStack = () => {
       const pos = new Float32Array(N * 3);
       const hlt = new Float32Array(N);
       const idx = new Float32Array(N).fill(-1);
       const numCells = 6;
-      const sizeX = 1.6;
-      const sizeY = 0.7;
-      const sizeZ = 0.7;
       const values = [40, 55, 22, 30, 20, 10];
-      
-      const textPoints: {x: number, y: number, c: number}[] = [];
-      const cvs = document.createElement('canvas');
-      cvs.width = 200; cvs.height = 200;
+      const cvs = document.createElement('canvas'); cvs.width = 200; cvs.height = 200;
       const ctx = cvs.getContext('2d')!;
       
+      let currentIdx = 0;
+      const ptsPerCell = Math.floor(N / numCells);
       for(let c=0; c<numCells; c++) {
-        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 200, 200);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 110px monospace';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(values[c].toString(), 100, 100);
-        const imgData = ctx.getImageData(0, 0, 200, 200).data;
-        const cellYOffset = ((numCells - 1) / 2 - c) * sizeY;
-        for (let y = 0; y < 200; y += 1) {
-          for (let x = 0; x < 200; x += 1) {
-            if (imgData[(y * 200 + x) * 4] > 128) {
-              textPoints.push({ x: (x - 100) * 0.0055, y: -(y - 100) * 0.0055 + cellYOffset, c: c });
-            }
-          }
+        const points = this.getPointsForText(values[c].toString(), 0.8, cvs, ctx);
+        const cellYOffset = ((numCells - 1) / 2 - c) * 0.7;
+        for(let j=0; j<ptsPerCell; j++) {
+            const p = points[j % points.length];
+            pos[currentIdx * 3] = p.x; pos[currentIdx * 3 + 1] = p.y + cellYOffset; pos[currentIdx * 3 + 2] = 0;
+            hlt[currentIdx] = 1.0; idx[currentIdx] = c;
+            currentIdx++;
         }
-      }
-      
-      for (let i = 0; i < N; i++) {
-        const r = Math.random();
-        let px, py, pz, h = 0, cIdx = -1;
-        
-        if (r < 0.8 && textPoints.length > 0) { 
-          const p = textPoints[Math.floor(Math.random() * textPoints.length)];
-          px = p.x; py = p.y; pz = 0;
-          h = 1.0;
-          cIdx = p.c;
-        } else {
-          const cell = Math.floor(Math.random() * numCells);
-          const edge = Math.floor(Math.random() * 12);
-          px = (Math.random() - 0.5) * sizeX;
-          py = (Math.random() - 0.5) * sizeY;
-          pz = (Math.random() - 0.5) * sizeZ;
-          if (edge === 0) { py = sizeY/2; pz = sizeZ/2; }
-          else if (edge === 1) { py = sizeY/2; pz = -sizeZ/2; }
-          else if (edge === 2) { py = -sizeY/2; pz = sizeZ/2; }
-          else if (edge === 3) { py = -sizeY/2; pz = -sizeZ/2; }
-          else if (edge === 4) { px = sizeX/2; pz = sizeZ/2; }
-          else if (edge === 5) { px = sizeX/2; pz = -sizeZ/2; }
-          else if (edge === 6) { px = -sizeX/2; pz = sizeZ/2; }
-          else if (edge === 7) { px = -sizeX/2; pz = -sizeZ/2; }
-          else if (edge === 8) { px = sizeX/2; py = sizeY/2; }
-          else if (edge === 9) { px = sizeX/2; py = -sizeY/2; }
-          else if (edge === 10) { px = -sizeX/2; py = sizeY/2; }
-          else if (edge === 11) { px = -sizeX/2; py = -sizeY/2; }
-          const cellYOffset = ((numCells - 1) / 2 - cell) * sizeY;
-          py += cellYOffset;
-          cIdx = cell;
-        }
-        pos[i * 3] = px;
-        pos[i * 3 + 1] = py;
-        pos[i * 3 + 2] = pz;
-        hlt[i] = h;
-        idx[i] = cIdx;
       }
       return { pos, hlt, idx };
     };
 
-    // 4. Binary Tree
     const getTree = () => {
       const pos = new Float32Array(N * 3);
       const hlt = new Float32Array(N);
-      
       const nodes = [
-        { id: 0, val: 8, x: 0, y: 1.5 },
-        { id: 1, val: 4, x: -1.2, y: 0.5 },
-        { id: 2, val: 12, x: 1.2, y: 0.5 },
-        { id: 3, val: 2, x: -1.8, y: -0.5 },
-        { id: 4, val: 14, x: 1.8, y: -0.5 },
-        { id: 5, val: 1, x: -2.4, y: -1.5 },
-        { id: 6, val: 3, x: -1.2, y: -1.5 },
-        { id: 7, val: 13, x: 1.2, y: -1.5 },
-        { id: 8, val: 15, x: 2.4, y: -1.5 },
-      ];
-      const edges = [
-        [0, 1], [0, 2], [1, 3], [2, 4], [3, 5], [3, 6], [4, 7], [4, 8]
+        { id: 0, val: 8, x: 0, y: 1.5, z: 0 },
+        { id: 1, val: 4, x: -1.2, y: 0.5, z: 0 },
+        { id: 2, val: 12, x: 1.2, y: 0.5, z: 0 },
+        { id: 3, val: 2, x: -1.8, y: -0.5, z: 0 },
+        { id: 4, val: 14, x: 1.8, y: -0.5, z: 0 },
+        { id: 5, val: 1, x: -2.4, y: -1.5, z: 0 },
+        { id: 6, val: 3, x: -1.2, y: -1.5, z: 0 },
+        { id: 7, val: 13, x: 1.2, y: -1.5, z: 0 },
+        { id: 8, val: 15, x: 2.4, y: -1.5, z: 0 },
       ];
       
-      const textPoints: {x: number, y: number}[] = [];
-      const cvs = document.createElement('canvas');
-      cvs.width = 100; cvs.height = 100;
+      const cvs = document.createElement('canvas'); cvs.width = 100; cvs.height = 100;
       const ctx = cvs.getContext('2d')!;
-      
-      for(let i=0; i<nodes.length; i++) {
-        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 100, 100);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 50px Arial';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(nodes[i].val.toString(), 50, 50);
-        const imgData = ctx.getImageData(0, 0, 100, 100).data;
-        for (let y = 0; y < 100; y += 1) {
-          for (let x = 0; x < 100; x += 1) {
-            if (imgData[(y * 100 + x) * 4] > 128) {
-              textPoints.push({ x: nodes[i].x + (x - 50) * 0.005, y: nodes[i].y + -(y - 50) * 0.005 });
-            }
-          }
+      let currentIdx = 0;
+      const ptsPerLabel = Math.floor(N / nodes.length);
+      nodes.forEach((node) => {
+        const textPts = this.getPointsForText(node.val.toString(), 0.5, cvs, ctx);
+        for (let i = 0; i < ptsPerLabel; i++) {
+          const tPt = textPts[i % textPts.length];
+          pos[currentIdx * 3] = node.x + tPt.x;
+          pos[currentIdx * 3 + 1] = node.y + tPt.y;
+          pos[currentIdx * 3 + 2] = node.z;
+          hlt[currentIdx] = 1.0;
+          currentIdx++;
         }
-      }
-      
-      const radius = 0.35;
-      for (let i = 0; i < N; i++) {
-        let px, py, pz, h = 0;
-        const r = Math.random();
-        
-        if (r < 0.6 && textPoints.length > 0) {
-          const p = textPoints[Math.floor(Math.random() * textPoints.length)];
-          px = p.x; py = p.y; pz = 0;
-          h = 1.0;
-        } else if (r < 0.8) {
-          const nodeIdx = Math.floor(Math.random() * nodes.length);
-          const n = nodes[nodeIdx];
-          const isLatitude = Math.random() < 0.5;
-          let cx, cy, cz;
-          if (isLatitude) {
-             const lats = [-0.6, -0.3, 0, 0.3, 0.6];
-             const sinPhi = lats[Math.floor(Math.random() * lats.length)];
-             const cosPhi = Math.sqrt(1 - sinPhi * sinPhi);
-             const theta = Math.random() * Math.PI * 2;
-             cx = cosPhi * Math.cos(theta) * radius;
-             cy = sinPhi * radius;
-             cz = cosPhi * Math.sin(theta) * radius;
-          } else {
-             const numLong = 8;
-             const lonIdx = Math.floor(Math.random() * numLong);
-             const theta = (lonIdx / numLong) * Math.PI;
-             const phi = Math.random() * Math.PI * 2;
-             const circleX = Math.cos(phi) * radius;
-             const circleY = Math.sin(phi) * radius;
-             cx = circleX * Math.cos(theta); cy = circleY; cz = -circleX * Math.sin(theta);
-          }
-          px = n.x + cx; py = n.y + cy; pz = cz;
-        } else {
-          const edgeIdx = Math.floor(Math.random() * edges.length);
-          const e = edges[edgeIdx];
-          const n1 = nodes[e[0]]; const n2 = nodes[e[1]];
-          const dx = n2.x - n1.x; const dy = n2.y - n1.y;
-          const dist = Math.sqrt(dx*dx + dy*dy);
-          const tStart = radius / dist; const tEnd = 1.0 - (radius / dist);
-          const t = tStart + Math.random() * (tEnd - tStart);
-          px = n1.x + dx * t; py = n1.y + dy * t; pz = 0;
-        }
-        pos[i * 3] = px * 1.5;
-        pos[i * 3 + 1] = py * 1.5;
-        pos[i * 3 + 2] = pz * 1.5;
-        hlt[i] = h;
-      }
+      });
       return { pos, hlt };
     };
 
-    // 5. LinkedList
     const getLinkedList = () => {
       const pos = new Float32Array(N * 3);
       const hlt = new Float32Array(N);
       const numCells = 6;
-      const size = 0.9;
       const spacing = 1.4;
       const values = [40, 39, 86, 48, 21, 10];
-      
-      const textPoints: {x: number, y: number}[] = [];
-      const cvs = document.createElement('canvas');
-      cvs.width = 400; cvs.height = 500; // Even higher resolution
+      const cvs = document.createElement('canvas'); cvs.width = 400; cvs.height = 500;
       const ctx = cvs.getContext('2d')!;
       
+      let currentIdx = 0;
+      const ptsPerCell = Math.floor(N / numCells);
       for(let c=0; c<numCells; c++) {
-        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 400, 500);
-        ctx.fillStyle = '#fff';
-        if (c === 0) { 
-          ctx.font = 'bold 50px monospace'; // Massive HEAD label
-          ctx.textAlign = 'center'; 
-          ctx.textBaseline = 'top'; 
-          ctx.fillText('HEAD', 200, 20); 
-        }
-        ctx.font = 'bold 150px monospace'; // Massive node values
-        ctx.textAlign = 'center'; 
-        ctx.textBaseline = 'middle'; 
-        ctx.fillText(values[c].toString(), 200, 280);
-        
-        const imgData = ctx.getImageData(0, 0, 400, 500).data;
+        const points = this.getPointsForText(values[c].toString(), 0.6, cvs, ctx);
         const cellXOffset = (c - (numCells - 1) / 2) * spacing;
-        for (let y = 0; y < 500; y += 1) {
-          for (let x = 0; x < 400; x += 1) {
-            if (imgData[(y * 400 + x) * 4] > 128) {
-              // Increased scale factor (0.0025 -> 0.0032) for larger text
-              textPoints.push({ x: (x - 200) * 0.0032 + cellXOffset, y: -(y - 280) * 0.0032 });
-            }
-          }
+        for(let j=0; j<ptsPerCell; j++) {
+            const p = points[j % points.length];
+            pos[currentIdx * 3] = p.x + cellXOffset; pos[currentIdx * 3 + 1] = p.y; pos[currentIdx * 3 + 2] = 0;
+            hlt[currentIdx] = 1.0;
+            currentIdx++;
         }
-      }
-      
-      for (let i = 0; i < N; i++) {
-        let px, py, pz, h = 0;
-        const r = Math.random();
-        
-        if (r < 0.70 && textPoints.length > 0) { 
-          // 1. DATA TEXT (YELLOW)
-          const p = textPoints[Math.floor(Math.random() * textPoints.length)];
-          px = p.x; py = p.y; pz = 0;
-          h = 1.0;
-        } else if (r < 0.85) {
-          // 2. ARROWS (LIGHT GLOW)
-          const arrowIdx = Math.floor(Math.random() * (numCells - 1));
-          const cellXOffset = (arrowIdx - (numCells - 1) / 2) * spacing;
-          const gapStart = cellXOffset + size/2 + 0.1; const gapEnd = cellXOffset + spacing - size/2 - 0.1;
-          const arrowPart = Math.random();
-          if (arrowPart < 0.6) { px = gapStart + Math.random() * (gapEnd - gapStart); py = 0; pz = 0; }
-          else { let u = Math.random(), v = Math.random(); if (u + v > 1) { u = 1 - u; v = 1 - v; } px = gapEnd + u * (-0.2) + v * (-0.2); py = u * 0.15 + v * (-0.15); pz = 0; }
-          h = 0.4;
-        } else if (r < 0.96) {
-          // 3. NODE BOXES (CYAN/WHITE)
-          const cell = Math.floor(Math.random() * numCells);
-          const edge = Math.floor(Math.random() * 12);
-          px = (Math.random() - 0.5) * size; py = (Math.random() - 0.5) * size; pz = (Math.random() - 0.5) * size;
-          if (edge === 0) { py = size/2; pz = size/2; }
-          else if (edge === 1) { py = size/2; pz = -size/2; }
-          else if (edge === 2) { py = -size/2; pz = size/2; }
-          else if (edge === 3) { py = -size/2; pz = -size/2; }
-          else if (edge === 4) { px = size/2; pz = size/2; }
-          else if (edge === 5) { px = size/2; pz = -size/2; }
-          else if (edge === 6) { px = -size/2; pz = size/2; }
-          else if (edge === 7) { px = -size/2; pz = -size/2; }
-          else if (edge === 8) { px = size/2; py = size/2; }
-          else if (edge === 9) { px = size/2; py = -size/2; }
-          else if (edge === 10) { px = -size/2; py = size/2; }
-          else if (edge === 11) { px = -size/2; py = -size/2; }
-          const cellXOffset = (cell - (numCells - 1) / 2) * spacing; px += cellXOffset;
-          h = 0.0;
-        } else {
-          // 4. RANDOM NOISE
-          px = (Math.random() - 0.5) * 8; py = (Math.random() - 0.5) * 4; pz = (Math.random() - 0.5) * 2;
-          h = 0.0;
-        }
-        pos[i * 3] = px * 1.1; pos[i * 3 + 1] = py * 1.1; pos[i * 3 + 2] = pz * 1.1;
-        hlt[i] = h;
       }
       return { pos, hlt };
     };
 
-    // 6. Blob
     const getBlob = () => {
       const pos = new Float32Array(N * 3);
       for (let i = 0; i < N; i++) {
-        const u = Math.random() * Math.PI * 2;
-        const v = Math.acos(2.0 * Math.random() - 1.0);
-        let r = 1.6 + Math.sin(u * 4) * 0.45 + Math.cos(v * 3) * 0.45;
-        pos[i * 3] = r * Math.sin(v) * Math.cos(u);
-        pos[i * 3 + 1] = r * Math.sin(v) * Math.sin(u);
-        pos[i * 3 + 2] = r * Math.cos(v);
+        pos[i * 3] = 0; pos[i * 3 + 1] = 0; pos[i * 3 + 2] = 0;
       }
       return pos;
     };
@@ -489,91 +463,34 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     const getQueue = () => {
       const pos = new Float32Array(N * 3);
       const hlt = new Float32Array(N);
-      const numCells = 7;
-      const size = 0.8;
-      const spacing = 1.1;
       const values = [10, 12, 15, 20, 16, 20, 25];
       
-      const textPoints: {x: number, y: number, highlight: boolean}[] = [];
-      const cvs = document.createElement('canvas');
-      cvs.width = 150; cvs.height = 150;
-      const ctx = cvs.getContext('2d')!;
+      let currentIdx = 0;
+      const ptsPerLabel = Math.floor(N / (values.length + 2)); // +2 for FRONT/REAR
       
-      // Labels: FRONT and REAR
-      const drawText = (txt: string, xOff: number) => {
-        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 150, 150);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 30px Arial';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(txt, 75, 75);
-        const imgData = ctx.getImageData(0, 0, 150, 150).data;
-        for (let y = 0; y < 150; y += 2) {
-          for (let x = 0; x < 150; x += 2) {
-            if (imgData[(y * 150 + x) * 4] > 128) {
-              textPoints.push({ x: (x - 75) * 0.008 + xOff, y: -(y - 75) * 0.008, highlight: true });
-            }
-          }
+      const labels = ['FRONT', ...values.map(v => v.toString()), 'REAR'];
+      const xPositions = [
+        -((values.length - 1) / 2 + 1.2) * 1.1,
+        ...values.map((_, i) => (i - (values.length - 1) / 2) * 1.1),
+        ((values.length - 1) / 2 + 1.2) * 1.1
+      ];
+
+      labels.forEach((label, idx) => {
+        const textPts = this.getPointsForText(label, idx === 0 || idx === labels.length - 1 ? 0.3 : 0.5, cvs, ctx);
+        const xOff = xPositions[idx];
+        for (let j = 0; j < ptsPerLabel; j++) {
+          const tPt = textPts[j % textPts.length];
+          pos[currentIdx * 3] = xOff + tPt.x;
+          pos[currentIdx * 3 + 1] = tPt.y;
+          pos[currentIdx * 3 + 2] = 0;
+          hlt[currentIdx] = 1.0;
+          currentIdx++;
         }
-      };
-      
-      drawText('FRONT', -((numCells - 1) / 2 + 1.2) * spacing);
-      drawText('REAR', ((numCells - 1) / 2 + 1.2) * spacing);
-      
-      // Numbers
-      for(let c=0; c<numCells; c++) {
-        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 150, 150);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 60px Arial';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(values[c].toString(), 75, 75);
-        const imgData = ctx.getImageData(0, 0, 150, 150).data;
-        const cellX = (c - (numCells - 1) / 2) * spacing;
-        for (let y = 0; y < 150; y += 2) {
-          for (let x = 0; x < 150; x += 2) {
-            if (imgData[(y * 150 + x) * 4] > 128) {
-              textPoints.push({ x: (x - 75) * 0.008 + cellX, y: -(y - 75) * 0.008, highlight: true });
-            }
-          }
-        }
-      }
-      
-      for (let i = 0; i < N; i++) {
-        const r = Math.random();
-        let px, py, pz, h = 0;
-        
-        if (r < 0.4 && textPoints.length > 0) {
-          const p = textPoints[Math.floor(Math.random() * textPoints.length)];
-          px = p.x; py = p.y; pz = 0;
-          h = 1.0;
-        } else {
-          // Octahedron cells
-          const cell = Math.floor(Math.random() * numCells);
-          const cellX = (cell - (numCells - 1) / 2) * spacing;
-          
-          // Octahedron vertices: (±1,0,0), (0,±1,0), (0,0,±1)
-          const vertices = [
-            [1,0,0], [-1,0,0], [0,1,0], [0,-1,0], [0,0,1], [0,0,-1]
-          ];
-          const edges = [
-            [0,2],[0,3],[0,4],[0,5],
-            [1,2],[1,3],[1,4],[1,5],
-            [2,4],[4,3],[3,5],[5,2]
-          ];
-          
-          const edgeIdx = Math.floor(Math.random() * edges.length);
-          const v1 = vertices[edges[edgeIdx][0]];
-          const v2 = vertices[edges[edgeIdx][1]];
-          const t = Math.random();
-          const s = size * 0.6;
-          px = cellX + (v1[0] + (v2[0] - v1[0]) * t) * s;
-          py = (v1[1] + (v2[1] - v1[1]) * t) * s;
-          pz = (v1[2] + (v2[2] - v1[2]) * t) * s;
-        }
-        
-        pos[i * 3] = px;
-        pos[i * 3 + 1] = py;
-        pos[i * 3 + 2] = pz;
-        hlt[i] = h;
+      });
+
+      while (currentIdx < N) {
+        pos[currentIdx * 3] = 0; pos[currentIdx * 3 + 1] = 0; pos[currentIdx * 3 + 2] = 0;
+        currentIdx++;
       }
       return { pos, hlt };
     };
@@ -586,109 +503,29 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       const boxSize = { w: 1.1, h: 0.7, d: 0.6 };
       const chains = [[10], [20, 22], [50], [80, 85, 88], [90], [55, 66], [60]];
       
-      const textPoints: {x: number, y: number, z: number}[] = [];
-      const cvs = document.createElement('canvas');
-      cvs.width = 150; cvs.height = 100;
-      const ctx = cvs.getContext('2d')!;
+      let currentIdx = 0;
+      const ptsPerBucket = Math.floor(N / numBuckets);
       
-      // Generate text points for each box and base
       for (let b = 0; b < numBuckets; b++) {
         const baseX = (b - (numBuckets - 1) / 2) * spacing;
         
-        // Base index number - Larger and cleaner
-        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 150, 100);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 55px Arial';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(b.toString(), 75, 50);
-        const baseImg = ctx.getImageData(0, 0, 150, 100).data;
-        for (let y = 0; y < 100; y += 1) { // Higher resolution
-          for (let x = 0; x < 150; x += 1) {
-            if (baseImg[(y * 150 + x) * 4] > 128) {
-              textPoints.push({ x: baseX + (x - 75) * 0.007, y: -0.9 + -(y - 50) * 0.007, z: 0.05 });
-            }
-          }
-        }
+        // Key-Value Labels
+        const chainTexts = chains[b].map(v => `${b}:${v}`).join('\n');
+        const textPts = this.getPointsForText(`${b}\n---\n${chainTexts}`, 0.35, cvs, ctx);
         
-        // Chain boxes
-        for (let j = 0; j < chains[b].length; j++) {
-          const val = chains[b][j];
-          const key = b + 2;
-          const txt = `${key}:${val}`;
-          
-          ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 150, 100);
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 42px Arial';
-          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText(txt, 75, 50);
-          const boxImg = ctx.getImageData(0, 0, 150, 100).data;
-          
-          const boxY = j * (boxSize.h + 0.15);
-          for (let y = 0; y < 100; y += 1) {
-            for (let x = 0; x < 150; x += 1) {
-              if (boxImg[(y * 150 + x) * 4] > 128) {
-                textPoints.push({ x: baseX + (x - 75) * 0.007, y: boxY + -(y - 50) * 0.007, z: 0.1 });
-              }
-            }
-          }
+        for (let j = 0; j < ptsPerBucket; j++) {
+          const tPt = textPts[j % textPts.length];
+          pos[currentIdx * 3] = baseX + tPt.x;
+          pos[currentIdx * 3 + 1] = tPt.y;
+          pos[currentIdx * 3 + 2] = 0;
+          hlt[currentIdx] = 1.0;
+          currentIdx++;
         }
       }
       
-      for (let i = 0; i < N; i++) {
-        const r = Math.random();
-        let px, py, pz, h = 0;
-        
-        // 65% for text for maximum clarity
-        if (r < 0.65 && textPoints.length > 0) {
-          const p = textPoints[Math.floor(Math.random() * textPoints.length)];
-          px = p.x; py = p.y; pz = p.z;
-          h = 1.0;
-        } else {
-          // Wireframe boxes - Sparse and clean
-          const b = Math.floor(Math.random() * numBuckets);
-          const chainIdx = Math.floor(Math.random() * (chains[b].length + 1));
-          const baseX = (b - (numBuckets - 1) / 2) * spacing;
-          
-          if (chainIdx === chains[b].length) {
-            // Base plate wireframe (flat box)
-            const edge = Math.floor(Math.random() * 12);
-            const bw = boxSize.w * 0.9; const bh = 0.15; const bd = boxSize.d * 0.9;
-            px = (Math.random() - 0.5) * bw;
-            py = (Math.random() - 0.5) * bh;
-            pz = (Math.random() - 0.5) * bd;
-            if (edge<4) py = bh/2; else if (edge<8) py = -bh/2;
-            else if (edge===8) { px=bw/2; py=bh/2; }
-            px += baseX; py -= 0.9;
-          } else {
-            // Stacked box wireframe
-            const edge = Math.floor(Math.random() * 12);
-            px = (Math.random() - 0.5) * boxSize.w;
-            py = (Math.random() - 0.5) * boxSize.h;
-            pz = (Math.random() - 0.5) * boxSize.d;
-            
-            if (edge === 0) { py = boxSize.h/2; pz = boxSize.d/2; }
-            else if (edge === 1) { py = boxSize.h/2; pz = -boxSize.d/2; }
-            else if (edge === 2) { py = -boxSize.h/2; pz = boxSize.d/2; }
-            else if (edge === 3) { py = -boxSize.h/2; pz = -boxSize.d/2; }
-            else if (edge === 4) { px = boxSize.w/2; pz = boxSize.d/2; }
-            else if (edge === 5) { px = boxSize.w/2; pz = -boxSize.d/2; }
-            else if (edge === 6) { px = -boxSize.w/2; pz = boxSize.d/2; }
-            else if (edge === 7) { px = -boxSize.w/2; pz = -boxSize.d/2; }
-            else if (edge === 8) { px = boxSize.w/2; py = boxSize.h/2; }
-            else if (edge === 9) { px = boxSize.w/2; py = -boxSize.h/2; }
-            else if (edge === 10) { px = -boxSize.w/2; py = boxSize.h/2; }
-            else if (edge === 11) { px = -boxSize.w/2; py = -boxSize.h/2; }
-            
-            const boxY = chainIdx * (boxSize.h + 0.15);
-            px += baseX; py += boxY;
-          }
-          pz += (Math.random() - 0.5) * 0.05;
-        }
-        
-        pos[i * 3] = px;
-        pos[i * 3 + 1] = py;
-        pos[i * 3 + 2] = pz;
-        hlt[i] = h;
+      while (currentIdx < N) {
+        pos[currentIdx * 3] = 0; pos[currentIdx * 3 + 1] = 0; pos[currentIdx * 3 + 2] = 0;
+        currentIdx++;
       }
       return { pos, hlt };
     };
@@ -696,8 +533,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     const getInteractiveArray = () => {
       const res = getArray();
       const cellIdxs = new Float32Array(N);
-      const size = 0.8;
-      const numCells = 10;
+      const size = 1.2;
+      const numCells = 4;
       for (let i = 0; i < N; i++) {
         // Calculate cell index based on x position for highlighting
         const px = res.pos[i * 3];
@@ -715,15 +552,16 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     const s5 = getQueue();
     const s6 = getHash();
     const s7 = getInteractiveArray();
+    const s8 = getStack(); // Interactive Stack (Duplicate of s2)
 
     const emptyHlt = new Float32Array(this.N);
     const emptyCells = new Float32Array(this.N).fill(-1);
 
-    this.shapes = [s0, s1.pos, s2.pos, s3.pos, s4.pos, s5.pos, s6.pos, s7.pos];
-    this.highlights = [emptyHlt, s1.hlt, s2.hlt, s3.hlt, s4.hlt, s5.hlt, s6.hlt, s7.hlt];
+    this.shapes = [s0, s1.pos, s2.pos, s3.pos, s4.pos, s5.pos, s6.pos, s7.pos, s8.pos];
+    this.highlights = [emptyHlt, s1.hlt, s2.hlt, s3.hlt, s4.hlt, s5.hlt, s6.hlt, s7.hlt, s8.hlt];
     
-    // Store cell indices for the interactive array (shape 7)
-    (this as any).cellData = [emptyCells, emptyCells, s2.idx, emptyCells, emptyCells, emptyCells, emptyCells, s7.cellIdxs];
+    // Store cell indices for the interactive array (shape 7) and stack (shape 8)
+    (this as any).cellData = [emptyCells, emptyCells, s2.idx, emptyCells, emptyCells, emptyCells, emptyCells, s7.cellIdxs, s8.idx];
 
     this.blastDir = new Float32Array(N * 3);
     for (let i = 0; i < N; i++) {
@@ -760,16 +598,20 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       varying float vHighlight;
       varying float vCellIdx;
       uniform float uTime;
-      uniform float uActiveCell;
+      uniform float uActiveCell1;
+      uniform float uActiveCell2;
       uniform float uActiveCellScale;
+      uniform float uGlobalOpacity;
       void main() {
-        vOp = 0.45 + 0.55 * sin(uTime * 1.8 + aRnd * 9.0);
+        vOp = 1.0; // Remove shimmer, make solid
         vHighlight = aHighlight;
         vCellIdx = aCellIndex;
         
         vec3 pos = position;
-        // Scale effect for the active cell (e.g. during Push/Pop)
-        if (uActiveCell >= 0.0 && abs(vCellIdx - uActiveCell) < 0.1) {
+        // Scale effect for the active cells (e.g. during Push/Pop or Two Sum)
+        bool isActive = (uActiveCell1 >= 0.0 && abs(vCellIdx - uActiveCell1) < 0.1) || 
+                        (uActiveCell2 >= 0.0 && abs(vCellIdx - uActiveCell2) < 0.1);
+        if (isActive) {
           float cellY = (2.5 - vCellIdx) * 0.7; // Derived from getStack logic
           pos.y -= cellY;
           pos *= uActiveCellScale;
@@ -787,8 +629,10 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       uniform vec3 uGlow;
       uniform vec3 uHighlightColor;
       uniform float uBlast;
-      uniform float uActiveCell;
+      uniform float uActiveCell1;
+      uniform float uActiveCell2;
       uniform float uActiveCellOpacity;
+      uniform float uGlobalOpacity;
       varying float vOp;
       varying float vHighlight;
       varying float vCellIdx;
@@ -797,21 +641,22 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
         float d = length(pt);
         if (d > 0.5) discard;
         
-        // Sharper core for better legibility
-        float core = smoothstep(0.5, 0.1, d); 
-        float glow = exp(-d * 6.0) * 0.4;
+        // Sharper core, no glow
+        float core = smoothstep(0.5, 0.45, d); 
         
         vec3 highlightCol = uHighlightColor;
         
         // Interactive cell highlight logic
-        float isCellActive = (uActiveCell >= 0.0 && abs(vCellIdx - uActiveCell) < 0.1) ? 1.0 : 0.0;
+        bool isActive = (uActiveCell1 >= 0.0 && abs(vCellIdx - uActiveCell1) < 0.1) || 
+                        (uActiveCell2 >= 0.0 && abs(vCellIdx - uActiveCell2) < 0.1);
+        float isCellActive = isActive ? 1.0 : 0.0;
         
         vec3 baseCol = mix(uGlow, uColor, core);
         vec3 col = mix(baseCol, highlightCol, max(vHighlight, isCellActive));
         
         float blastFade = mix(1.0, 0.35, uBlast);
-        float cellFade = (uActiveCell >= 0.0 && abs(vCellIdx - uActiveCell) < 0.1) ? uActiveCellOpacity : 1.0;
-        float alpha = (core + glow) * vOp * blastFade * cellFade;
+        float cellFade = isActive ? uActiveCellOpacity : 1.0;
+        float alpha = core * vOp * blastFade * cellFade * uGlobalOpacity;
         gl_FragColor = vec4(col, alpha);
       }
     `;
@@ -825,9 +670,11 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
         uGlow: { value: new THREE.Color(0x06B6D4) },
         uHighlightColor: { value: new THREE.Color(0xFACC15) },
         uBlast: { value: 0 },
-        uActiveCell: { value: -1.0 },
+        uActiveCell1: { value: -1.0 },
+        uActiveCell2: { value: -1.0 },
         uActiveCellOpacity: { value: 1.0 },
-        uActiveCellScale: { value: 1.0 }
+        uActiveCellScale: { value: 1.0 },
+        uGlobalOpacity: { value: 0.0 }
       },
       transparent: true,
       depthWrite: false,
@@ -849,30 +696,18 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
     this.blastSmooth = this.lerp(this.blastSmooth, this.blastProgress, 0.06);
     this.mat.uniforms['uBlast'].value = this.blastSmooth;
-    this.mat.uniforms['uActiveCell'].value = this.interactiveCell;
+    this.mat.uniforms['uActiveCell1'].value = this.interactiveCells[0] !== undefined ? this.interactiveCells[0] : -1;
+    this.mat.uniforms['uActiveCell2'].value = this.interactiveCells[1] !== undefined ? this.interactiveCells[1] : -1;
     this.mat.uniforms['uHighlightColor'].value = this.activeHighlightColor;
     this.mat.uniforms['uActiveCellOpacity'].value = this.activeCellOpacity;
     this.mat.uniforms['uActiveCellScale'].value = this.activeCellScale;
-
-    // 1. Y-axis auto rotation
-    // Slow down and snap to face forward (nearest multiple of 2*PI) when shape is the Array (1), Stack (2), Tree (3), LinkedList (4), or Interactive (7)
-    let arrayness1 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 1.0));
-    let arrayness2 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 2.0));
-    let arrayness3 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 3.0));
-    let arrayness4 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 4.0));
-    let arrayness5 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 5.0));
-    let arrayness6 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 6.0));
-    let arrayness7 = 1.0 - Math.min(1.0, Math.abs(this.morphSmooth - 7.0));
-    let staticness = Math.max(arrayness1, arrayness2, arrayness3, arrayness4, arrayness5, arrayness6, arrayness7);
     
-    if (staticness > 0.01) {
-      const nearestMultiple = Math.round(this.frameRotation / (Math.PI * 2)) * (Math.PI * 2);
-      this.frameRotation = this.lerp(this.frameRotation, nearestMultiple, 0.1 * staticness);
-      // Only add a tiny bit of rotation if we are not fully snapped
-      this.frameRotation += 0.003 * (1.0 - staticness);
-    } else {
-      this.frameRotation += 0.01;
-    }
+    // Global opacity: 0 at the very top (Hero), fades in as we scroll to services/data structures
+    const globalOpacity = Math.min(1.0, Math.max(0.0, (this.morphSmooth - 0.05) * 4.0));
+    this.mat.uniforms['uGlobalOpacity'].value = globalOpacity;
+
+    // 1. Y-axis auto rotation - DISABLED (Static scene)
+    this.frameRotation = 0;
 
     // 2. Smooth the scroll-driven extra rotation offset
     this.scrollRotationOffsetSmooth = this.lerp(
@@ -881,31 +716,107 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       0.05
     );
 
-    // Combine: base frame spin + smoothed scroll boost
     this.pts.rotation.y = this.frameRotation + this.scrollRotationOffsetSmooth;
+    // Restore 3D tilt for the 'premium' image look
+    const baseTiltX = 0.15;
+    const baseTiltY = 0.2;
+    
+    this.arrayGroup.rotation.x = baseTiltX; 
+    this.arrayGroup.rotation.y = baseTiltY; 
+    this.stackGroup.rotation.x = baseTiltX;
+    this.stackGroup.rotation.y = baseTiltY;
 
-    // 3. Horizontal position (left/right shift per page)
+    // Visibility Logic - Ensure both are visible during the transition to prevent "jumping"
+    const isArraySection = (this.morphSmooth > 0.5 && this.morphSmooth < 1.8) || (this.morphSmooth > 6.5 && this.morphSmooth < 7.8);
+    const isStackSection = (this.morphSmooth > 1.2 && this.morphSmooth < 2.5) || (this.morphSmooth > 7.2);
+    
+    this.arrayGroup.visible = isArraySection;
+    this.stackGroup.visible = isStackSection;
+    
+    // Fade Logic
+    let arrayOpacity = 0;
+    let stackOpacity = 0;
+
+    // NEW: Continuous visibility logic for Array and Stack
+    if (this.morphSmooth >= 0.5 && this.morphSmooth <= 1.2) {
+      // Array is solid and fully visible
+      arrayOpacity = 1.0;
+      stackOpacity = 0;
+      this.resetSolidPositions();
+    } else if (this.morphSmooth > 1.2 && this.morphSmooth < 1.8) {
+      // TRANSITION: Array morphs into Stack (No fade out, just morph)
+      const transitionLam = (this.morphSmooth - 1.2) / 0.6;
+      arrayOpacity = 1.0 - transitionLam;
+      stackOpacity = transitionLam;
+      this.morphArrayToStack(transitionLam);
+    } else if (this.morphSmooth >= 1.8 && this.morphSmooth <= 2.5) {
+      // Stack is solid and fully visible
+      arrayOpacity = 0;
+      stackOpacity = 1.0;
+      this.morphArrayToStack(1.0);
+    } else if (this.morphSmooth >= 6.5 && this.morphSmooth <= 7.2) {
+      // Interactive Array (Fully visible)
+      arrayOpacity = 1.0;
+      stackOpacity = 0;
+      this.resetSolidPositions();
+    } else if (this.morphSmooth > 7.2 && this.morphSmooth < 7.8) {
+      // Interactive Transition (7 -> 8)
+      const transitionLam = (this.morphSmooth - 7.2) / 0.6;
+      arrayOpacity = 1.0 - transitionLam;
+      stackOpacity = transitionLam;
+      this.morphArrayToStack(transitionLam);
+    } else if (this.morphSmooth >= 7.8) {
+      // Interactive Stack (Fully visible)
+      arrayOpacity = 0;
+      stackOpacity = 1.0;
+      this.morphArrayToStack(1.0);
+    }
+    
+    arrayOpacity = Math.max(0, Math.min(1, arrayOpacity));
+    stackOpacity = Math.max(0, Math.min(1, stackOpacity));
+    
+    this.arrayGroup.children.forEach((child: any) => {
+      if (child.material) child.material.opacity = arrayOpacity * globalOpacity;
+    });
+    this.stackGroup.children.forEach((child: any) => {
+      if (child.material) child.material.opacity = stackOpacity * globalOpacity;
+    });
+
+    // Aggressively hide particles when in solid Array or Stack sections
+    const nearArray1 = Math.abs(this.morphSmooth - 1.0) < 0.5;
+    const nearStack2 = Math.abs(this.morphSmooth - 2.0) < 0.5;
+    const nearArray7 = this.morphSmooth > 6.5;
+    if (nearArray1 || nearStack2 || nearArray7) {
+        this.mat.uniforms['uGlobalOpacity'].value = 0.0;
+    } else {
+        this.mat.uniforms['uGlobalOpacity'].value = globalOpacity;
+    }
+
+    // 3. Horizontal position
     this.ptsPosSmooth = this.lerp(this.ptsPosSmooth, this.ptsPosTarget, 0.05);
 
-    // 4. Mouse parallax depth effect (only on Work page when enabled)
-    if (this.enableMouseParallax) {
-      this.pts.position.x = this.lerp(this.pts.position.x, this.ptsPosSmooth + this.mouse.x * 0.5, 0.05);
-    } else {
-      this.pts.position.x = this.ptsPosSmooth;
-    }
+    // 4. Mouse parallax & Position
+    const mx = this.enableMouseParallax ? this.mouse.x * 0.5 : 0;
+    const my = this.enableMouseParallax ? -this.mouse.y * 0.3 : 0;
 
-    // 5. Scroll-driven Y position (DNA moves up as user scrolls)
+    this.pts.position.x = this.ptsPosSmooth + mx;
+    this.arrayGroup.position.x = this.ptsPosSmooth + mx;
+    this.stackGroup.position.x = this.ptsPosSmooth + mx;
+
     this.posYSmooth = this.lerp(this.posYSmooth, this.posYTarget, 0.08);
-    this.pts.position.y = this.posYSmooth;
-    if (this.enableMouseParallax) {
-      this.pts.position.y = this.lerp(this.pts.position.y, this.posYSmooth + (-this.mouse.y * 0.3), 0.05);
-    }
+    this.pts.position.y = this.posYSmooth + my;
+    this.arrayGroup.position.y = this.posYSmooth + my;
+    this.stackGroup.position.y = this.posYSmooth + my;
 
-    // 6. Scroll-driven scale + subtle breathing pulse
+    // 6. Scroll-driven scale
     this.scaleSmooth = this.lerp(this.scaleSmooth, this.scaleTarget, 0.08);
-    const breathePulse = Math.sin(elapsed * 2.0) * 0.04;
-    const finalScale = this.scaleSmooth + breathePulse;
+    const finalScale = this.scaleSmooth;
     this.pts.scale.set(finalScale, finalScale, finalScale);
+    
+    // Solid versions scale - Increased for the thick block look
+    const solidScale = finalScale * 0.85; 
+    this.arrayGroup.scale.set(solidScale, solidScale, solidScale);
+    this.stackGroup.scale.set(solidScale, solidScale, solidScale);
 
     this.camera.position.x = this.mouse.x * 0.3;
     this.camera.position.y = -this.mouse.y * 0.3;
@@ -919,8 +830,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.lastScrollShapeTarget = this.scrollShapeTarget;
 
     const activeTarget = (this.cardHovered !== -1 && this.scrollActiveFrames <= 0) ? this.cardHovered : this.scrollShapeTarget;
-    // Single fast lerp â€” ease3 is applied at the bi/lam step below
-    this.morphSmooth = this.lerp(this.morphSmooth, activeTarget, 0.06);
+    // Single fast lerp â€” increased factor from 0.06 to 0.1 for snappier transitions
+    this.morphSmooth = this.lerp(this.morphSmooth, activeTarget, 0.1);
 
     // Bounded index interpolation
     let bi = Math.floor(this.morphSmooth);
@@ -940,22 +851,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       let y = this.lerp(s1[i * 3 + 1], s2[i * 3 + 1], lam);
       let z = this.lerp(s1[i * 3 + 2], s2[i * 3 + 2], lam);
 
-      // Calculate Vortex Repulsion if not blasting
-      if (this.blastSmooth < 0.2) {
-        // Unproject mouse position to world space approximate to origin z=0
-        const mx = this.mouse.x * window.innerWidth / 100 * 0.3;
-        const my = this.mouse.y * window.innerHeight / 100 * 0.3;
-        // The prompt says: "Mouse vortex repulsion (swirl): if bl < 0.2, within radius sqrt(2.5), apply force dx+dy*1.5 / dy-dx*1.5"
-        // For simplicity, we apply a rudimentary radius check and twist
-        const dx = x - (mx - this.ptsPosSmooth);
-        const dy = y - my;
-        const distSq = dx * dx + dy * dy;
-        if (distSq < 2.5) {
-          const force = (2.5 - distSq) * 0.1;
-          x += (dx + dy * 1.5) * force;
-          y += (dy - dx * 1.5) * force;
-        }
-      }
+      // Vortex Repulsion DISABLED
 
       let tx = this.lerp(x, this.blastDir[i * 3], smBl);
       let ty = this.lerp(y, this.blastDir[i * 3 + 1], smBl);
