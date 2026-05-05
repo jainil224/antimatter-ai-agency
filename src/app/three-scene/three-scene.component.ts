@@ -249,7 +249,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.scene.add(this.treeGroup);
 
     const numCells = 7;
-    const radius = 0.95; // Increased radius
+    const radius = 0.65; // Smaller radius
     const values = [12, 9, 40, 5, 10, 25, 99];
     const positions = [
       { x: 0, y: 2.8 },      // Root (0)
@@ -271,7 +271,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       this.treeNodes.push(node);
       this.treeGroup.add(node);
 
-      const valSprite = this.createLabelSprite(values[i].toString(), '#FFFFFF', 140); // White text as per image
+      const valSprite = this.createLabelSprite(values[i].toString(), '#FFFFFF', 110); // White text, smaller font to fit circle
       valSprite.position.set(positions[i].x, positions[i].y, 0.1);
       valSprite.scale.set(1.4, 1.4, 1);
       this.treeLabels.push(valSprite);
@@ -536,23 +536,43 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       { x: -3.9, y: -1.2 }, { x: -1.3, y: -1.2 }, { x: 1.3, y: -1.2 }, { x: 3.9, y: -1.2 }
     ];
 
+    // Tree values: [12, 9, 40, 5, 10, 25, 99]
+    // Stack values: [25, 40, 5, 8, 99] (indices 0 to 4)
+    // Mapping: Tree Index -> Stack Index
+    const treeToStackMap: { [key: number]: number } = {
+        2: 1, // 40
+        3: 2, // 5
+        4: 3, // 10 (morphs from Stack's 8)
+        5: 0, // 25
+        6: 4  // 99
+    };
+
     for (let i = 0; i < 7; i++) {
-        if (i === 0 || i === 6) {
+        if (treeToStackMap[i] === undefined) {
+            // New tree nodes (12 and 9) emerge from the center
             if (this.treeNodes[i]) {
-                this.treeNodes[i].position.set(treePos[i].x, treePos[i].y, 0);
+                const tx = this.lerp(0, treePos[i].x, lam);
+                const ty = this.lerp(0, treePos[i].y, lam);
+                this.treeNodes[i].position.set(tx, ty, 0);
+                
                 const ts = this.lerp(0.001, 1, lam);
                 this.treeNodes[i].scale.set(ts, ts, ts);
                 (this.treeNodes[i].material as any).opacity = 0.9 * lam;
             }
             if (this.treeLabels[i]) {
-                this.treeLabels[i].position.set(treePos[i].x, treePos[i].y, 0.1);
+                const tx = this.lerp(0, treePos[i].x, lam);
+                const ty = this.lerp(0, treePos[i].y, lam);
+                this.treeLabels[i].position.set(tx, ty, 0.1);
+                
                 const ts = this.lerp(0.001, 1.4, lam);
                 this.treeLabels[i].scale.set(ts, ts, 1);
                 (this.treeLabels[i].material as any).opacity = lam;
             }
         } else {
-            const stackIdx = i - 1;
+            const stackIdx = treeToStackMap[i];
             const stackY = (2 - stackIdx) * stackSpacing;
+            
+            // Interpolate position from vertical stack to tree branches
             const tx = this.lerp(0, treePos[i].x, lam);
             const ty = this.lerp(stackY, treePos[i].y, lam);
 
@@ -1099,8 +1119,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
     // Visibility Logic - Ensure both are visible during the transition to prevent "jumping"
     const isArraySection = (this.morphSmooth > 0.5 && this.morphSmooth < 1.8) || (this.morphSmooth > 6.5 && this.morphSmooth < 7.8);
-    const isStackSection = (this.morphSmooth > 1.2 && this.morphSmooth < 2.8) || (this.morphSmooth > 7.2);
-    const isTreeSection = (this.morphSmooth > 2.2 && this.morphSmooth < 3.8);
+    const isStackSection = (this.morphSmooth > 1.2 && this.morphSmooth < 2.8) || (this.morphSmooth > 7.2 && this.morphSmooth < 8.8);
+    const isTreeSection = (this.morphSmooth > 2.2 && this.morphSmooth < 3.8) || (this.morphSmooth > 8.2);
     
     this.arrayGroup.visible = isArraySection;
     this.stackGroup.visible = isStackSection;

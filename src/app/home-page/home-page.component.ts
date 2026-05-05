@@ -280,7 +280,9 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                 this.activeOp = 'Morphing';
                 this.opDescription = 'Converting Array to Stack (LIFO)...';
                 this.opStatus = 'Restructuring...';
-                threeState.scrollShapeTarget = 8; 
+                
+                const localP = (p - 0.35) / 0.05;
+                threeState.scrollShapeTarget = 7 + localP; // Tie transition to scroll progress
                 threeState.interactiveCells = [-1, -1];
               }
               // --- PHASE 3: STACK OPERATIONS (0.40 - 0.70) ---
@@ -352,7 +354,9 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                 this.activeOp = 'Morphing';
                 this.opDescription = 'Converting Stack to Binary Tree...';
                 this.opStatus = 'Restructuring...';
-                threeState.scrollShapeTarget = 9; 
+                
+                const localP = (p - 0.70) / 0.05;
+                threeState.scrollShapeTarget = 8 + localP; // Tie transition to scroll progress
                 threeState.interactiveCells = [-1, -1];
                 threeState.operationType = 'none';
               }
@@ -367,38 +371,38 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                 this.activeStep = step;
 
                 if (step <= 5) {
-                  this.activeOp = 'Traversal';
-                  this.opDescription = 'In-order Traversal: Left, Root, Right';
-                  this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(h)';
-                  
-                  // Simple mock traversal sequence over the tree's 7 nodes
-                  const traversalOrder = [3, 1, 4, 0, 5, 2, 6]; 
-                  const tIdx = Math.min(6, step);
-                  const nodeIdx = traversalOrder[tIdx];
-                  this.opStatus = `Visiting node ${nodeIdx}`;
-                  
-                  threeState.interactiveCells = [nodeIdx, -1];
-                  threeState.activeHighlightColor.setHex(0xFACC15); // Yellow
-                  threeState.activeCellScale = 1.05;
-                  threeState.activeCellOpacity = 1.0;
-                  threeState.operationType = 'search';
-                  threeState.highlightedCellIndex = nodeIdx;
-                } else {
-                  this.activeOp = 'Search';
-                  this.opDescription = 'Binary Search: Finding element in O(log n)';
+                  this.activeOp = 'Insert';
+                  this.opDescription = 'Insert: Adding a new node to the BST';
                   this.timeComplexity = 'O(log n)'; this.spaceComplexity = 'O(1)';
                   
-                  // Mock binary search path to 25 (Root -> Right -> Left)
-                  const searchPath = [0, 2, 5]; 
-                  const sIdx = Math.min(2, Math.floor((step - 6) / 2));
-                  const nodeIdx = searchPath[sIdx];
-                  this.opStatus = `Checking node ${nodeIdx}...`;
+                  // Mock insert path for value 10: Root(12) -> Left(9) -> Right(10)
+                  const insertPath = [0, 1, 4]; 
+                  const tIdx = Math.min(2, Math.floor(step / 2));
+                  const nodeIdx = insertPath[tIdx];
+                  this.opStatus = tIdx === 2 ? `Inserted node 10!` : `Traversing to insert 10...`;
                   
                   threeState.interactiveCells = [nodeIdx, -1];
                   threeState.activeHighlightColor.setHex(0x00FF88); // Green
-                  threeState.activeCellScale = 1.1;
+                  threeState.activeCellScale = tIdx === 2 ? 1.2 : 1.05;
                   threeState.activeCellOpacity = 1.0;
                   threeState.operationType = 'insert';
+                  threeState.highlightedCellIndex = nodeIdx;
+                } else {
+                  this.activeOp = 'Delete';
+                  this.opDescription = 'Delete: Removing a node from the BST';
+                  this.timeComplexity = 'O(log n)'; this.spaceComplexity = 'O(1)';
+                  
+                  // Mock delete path for value 99: Root(12) -> Right(40) -> Right(99)
+                  const deletePath = [0, 2, 6]; 
+                  const sIdx = Math.min(2, Math.floor((step - 6) / 2));
+                  const nodeIdx = deletePath[sIdx];
+                  this.opStatus = sIdx === 2 ? `Deleted node 99!` : `Traversing to delete 99...`;
+                  
+                  threeState.interactiveCells = [nodeIdx, -1];
+                  threeState.activeHighlightColor.setHex(0xFF3333); // Red
+                  threeState.activeCellScale = sIdx === 2 ? 1.2 : 1.05;
+                  threeState.activeCellOpacity = 1.0;
+                  threeState.operationType = 'delete';
                   threeState.highlightedCellIndex = nodeIdx;
                 }
               }

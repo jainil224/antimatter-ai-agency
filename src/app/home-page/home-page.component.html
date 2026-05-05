@@ -69,20 +69,23 @@
           <!-- TREE OPS -->
           <ng-container *ngIf="activeDS === 'Tree'">
             <ng-container [ngSwitch]="activeOp">
-              <div *ngSwitchCase="'Traversal'">
-                <div class="line" [class.active]="activeStep >= 0 && activeStep <= 5"><span>1</span> <span class="keyword">def</span> <span class="func">inorder</span>(node):</div>
-                <div class="line" [class.active]="activeStep >= 0 && activeStep <= 5"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> node:</div>
-                <div class="line" [class.active]="activeStep >= 0 && activeStep <= 5"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;inorder(node.left)</div>
-                <div class="line" [class.active]="activeStep >= 0 && activeStep <= 5"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="func">print</span>(node.val)</div>
-                <div class="line" [class.active]="activeStep >= 0 && activeStep <= 5"><span>5</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;inorder(node.right)</div>
+              <div *ngSwitchCase="'Insert'">
+                <div class="line" [class.active]="activeStep >= 0 && activeStep <= 5"><span>1</span> <span class="keyword">def</span> <span class="func">insert</span>(node, val):</div>
+                <div class="line" [class.active]="activeStep >= 0 && activeStep <= 5"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> node <span class="keyword">is</span> <span class="keyword">None</span>:</div>
+                <div class="line" [class.active]="activeStep >= 0 && activeStep <= 5"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> Node(val)</div>
+                <div class="line" [class.active]="activeStep >= 0 && activeStep <= 5"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> val < node.val:</div>
+                <div class="line" [class.active]="activeStep >= 0 && activeStep <= 5"><span>5</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;node.left = insert(node.left, val)</div>
+                <div class="line" [class.active]="activeStep >= 0 && activeStep <= 5"><span>6</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">else</span>:</div>
+                <div class="line" [class.active]="activeStep >= 0 && activeStep <= 5"><span>7</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;node.right = insert(node.right, val)</div>
               </div>
-              <div *ngSwitchCase="'Search'">
-                <div class="line" [class.active]="activeStep >= 6 && activeStep <= 12"><span>1</span> <span class="keyword">def</span> <span class="func">search</span>(node, val):</div>
-                <div class="line" [class.active]="activeStep >= 6 && activeStep <= 12"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> node <span class="keyword">is</span> <span class="keyword">None</span> <span class="keyword">or</span> node.val == val:</div>
-                <div class="line" [class.active]="activeStep >= 6 && activeStep <= 12"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> node</div>
-                <div class="line" [class.active]="activeStep >= 6 && activeStep <= 12"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> node.val > val:</div>
-                <div class="line" [class.active]="activeStep >= 6 && activeStep <= 12"><span>5</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> search(node.left, val)</div>
-                <div class="line" [class.active]="activeStep >= 6 && activeStep <= 12"><span>6</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> search(node.right, val)</div>
+              <div *ngSwitchCase="'Delete'">
+                <div class="line" [class.active]="activeStep >= 6 && activeStep <= 12"><span>1</span> <span class="keyword">def</span> <span class="func">delete</span>(node, val):</div>
+                <div class="line" [class.active]="activeStep >= 6 && activeStep <= 12"><span>2</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> val < node.val:</div>
+                <div class="line" [class.active]="activeStep >= 6 && activeStep <= 12"><span>3</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;node.left = delete(node.left, val)</div>
+                <div class="line" [class.active]="activeStep >= 6 && activeStep <= 12"><span>4</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">elif</span> val > node.val:</div>
+                <div class="line" [class.active]="activeStep >= 6 && activeStep <= 12"><span>5</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;node.right = delete(node.right, val)</div>
+                <div class="line" [class.active]="activeStep >= 6 && activeStep <= 12"><span>6</span> &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">else</span>:</div>
+                <div class="line" [class.active]="activeStep >= 6 && activeStep <= 12"><span>7</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Node found, remove it</span></div>
               </div>
             </ng-container>
           </ng-container>
