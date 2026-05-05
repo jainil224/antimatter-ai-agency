@@ -1369,6 +1369,53 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       if (line.material) (line.material as THREE.LineBasicMaterial).opacity = treeOpacity * globalOpacity * 0.8;
     });
 
+    // ── LINKED LIST COLOR CODING ──────────────────────────────────────────
+    this.linkedListCubes.forEach((cube, i) => {
+      const mat = cube.material as THREE.LineBasicMaterial;
+      const isActive = i === this.highlightedCellIndex && this.operationType !== 'none' && llOpacity > 0;
+      
+      const desired = isActive ? targetColor : defaultColor;
+      mat.color.lerp(desired, 0.18);
+      
+      if (isActive && this.operationType === 'insert') {
+          cube.scale.set(this.activeCellScale, this.activeCellScale, this.activeCellScale);
+          mat.opacity = this.activeCellOpacity * llOpacity * globalOpacity;
+      } else if (isActive) {
+          const pulse = 1.0 + Math.sin(performance.now() * 0.008) * 0.08;
+          cube.scale.set(pulse, pulse, pulse);
+          mat.opacity = Math.min(1.0, (llOpacity * globalOpacity) + 0.15);
+      } else {
+          cube.scale.set(
+            this.lerp(cube.scale.x, 1.0, 0.15),
+            this.lerp(cube.scale.y, 1.0, 0.15),
+            this.lerp(cube.scale.z, 1.0, 0.15)
+          );
+          mat.opacity = llOpacity * globalOpacity;
+      }
+
+      if (this.linkedListLabels[i]) {
+         const labelMat = this.linkedListLabels[i].material as THREE.SpriteMaterial;
+         if (isActive && this.operationType === 'insert') {
+             this.linkedListLabels[i].scale.set(1.4 * this.activeCellScale, 1.4 * this.activeCellScale, 1);
+             labelMat.opacity = this.activeCellOpacity * llOpacity * globalOpacity;
+         } else {
+             this.linkedListLabels[i].scale.set(1.4, 1.4, 1);
+             labelMat.opacity = llOpacity * globalOpacity;
+         }
+      }
+    });
+
+    // Arrow opacity management
+    this.linkedListArrows.forEach(arrow => {
+       arrow.children.forEach((child: any) => {
+         if (child.material) child.material.opacity = llOpacity * globalOpacity * 0.8;
+       });
+    });
+
+    if (this.headLabel) {
+       (this.headLabel.material as any).opacity = llOpacity * globalOpacity;
+    }
+
     // Aggressively hide particles when in solid Array, Stack or Tree sections
     const nearArray1 = Math.abs(this.morphSmooth - 1.0) < 0.5;
     const nearStack2 = Math.abs(this.morphSmooth - 2.0) < 0.5;
