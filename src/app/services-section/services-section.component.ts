@@ -60,16 +60,6 @@ export class ServicesSectionComponent {
       shape: 5,
       shadowInset: 'inset 0 -140px 140px -70px rgba(255, 180, 0, 0.2)',
       shadowOuter: '0 0 40px rgba(255, 180, 0, 0.15)'
-    },
-    {
-      num: '06',
-      title: 'Hash Table',
-      desc: 'Key-Value Mapping, Collision Handling via Chaining, Constant-time Search O(1), Distributed Data Storage',
-      services: ['Hashing Functions', 'Bucket Management', 'Collision Handling', 'Load Factor Optimization', 'Dynamic Resizing', 'Search & Insertion'],
-      tools: ['Hash Maps', 'Hash Sets', 'Dictionaries', 'Caching'],
-      shape: 6,
-      shadowInset: 'inset 0 -140px 140px -70px rgba(0, 210, 255, 0.2)',
-      shadowOuter: '0 0 40px rgba(0, 210, 255, 0.15)'
     }
   ];
 }
