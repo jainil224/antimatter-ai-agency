@@ -91,6 +91,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   public activeHighlightColor = new THREE.Color(0xFACC15); 
   public activeCellOpacity = 1.0;
   public activeCellScale = 1.0;
+  public operationType: 'insert' | 'delete' | 'search' | 'none' = 'none'; // NEW: color-code blocks
+  public highlightedCellIndex = -1; // Single active cell for color override
   private lastScrollShapeTarget = 0;
   private scrollActiveFrames = 0;
   private cardHovered = -1;
@@ -1160,6 +1162,28 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     });
     this.queueGroup.children.forEach((child: any) => {
       if (child.material) (child.material as any).opacity = qOpacity * globalOpacity;
+    });
+
+    // ── PER-CUBE COLOR CODING (Insert = green, Delete = red) ──────────────
+    const opColor = this.operationType === 'insert'
+      ? 0x22C55E  // green
+      : this.operationType === 'delete'
+        ? 0xEF4444  // red
+        : 0x22D3EE; // default cyan
+
+    this.arrayCubes.forEach((cube, i) => {
+      const mat = cube.material as THREE.LineBasicMaterial;
+      const isActive = i === this.highlightedCellIndex;
+      if (isActive && this.operationType !== 'none') {
+        mat.color.setHex(opColor);
+        mat.opacity = arrayOpacity * globalOpacity;
+        // Subtle scale pulse on the active block
+        const pulse = 1.0 + Math.sin(performance.now() * 0.006) * 0.04;
+        cube.scale.set(pulse, pulse, pulse);
+      } else {
+        mat.color.setHex(0x22D3EE); // restore default cyan
+        cube.scale.set(1, 1, 1);
+      }
     });
 
     // Handle Tree Edge (Line) Opacity

@@ -164,10 +164,30 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
         onUpdate: (self) => {
           if (threeState) {
             threeState.blastProgress = self.progress;
-            threeState.ptsPosTarget = -4.5 + (4.5 * self.progress);
+            threeState.ptsPosTarget = 0 - (4.5 * self.progress); // Interactive is at 0, case studies shifts it left
           }
         }
       }));
+
+      // 5.5. Transition from Services to Interactive
+      this.triggers.push(ScrollTrigger.create({
+        trigger: '.interactive-section',
+        start: 'top bottom',
+        end: 'top top',
+        scrub: true,
+        onUpdate: (self) => {
+          if (threeState) {
+            // Smoothly move from -5.5 (Services left) to 0 (Interactive center)
+            threeState.ptsPosTarget = -5.5 + (5.5 * self.progress);
+            // Smoothly morph from 5 (Queue) to 7 (Array)
+            threeState.scrollShapeTarget = 5 + (2 * self.progress);
+            // Interpolate position and scale
+            threeState.posYTarget = 0 - (0.4 * self.progress);
+            threeState.scaleTarget = 0.78 + (0.17 * self.progress);
+          }
+        }
+      }));
+
       // 6. UNIFIED Interactive Section (Array -> Morph -> Stack)
       this.triggers.push(ScrollTrigger.create({
         trigger: '.interactive-section',
@@ -204,18 +224,25 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                     const innerP = opP / 0.50;
                     const step = Math.floor(innerP * 12);
                     this.activeStep = step;
-                    
+
                     if (step <= 1) {
                       this.opStatus = 'Initializing...';
                       threeState.interactiveCells = [-1, -1];
-                    } else if (step <= 8) {
-                      // Shifting phase (highlighting 9 down to 4)
-                      const shiftIdx = 9 - (step - 2);
+                      threeState.operationType = 'none';
+                      threeState.highlightedCellIndex = -1;
+                    } else if (step <= 7) {
+                      // Shifting phase — highlight the cell being shifted (cyan, neutral)
+                      const shiftIdx = Math.min(6, 7 - (step - 2));
                       this.opStatus = `Shifting Index ${shiftIdx} → ${shiftIdx + 1}`;
                       threeState.interactiveCells = [shiftIdx, -1];
+                      threeState.operationType = 'search'; // use cyan for shifting
+                      threeState.highlightedCellIndex = shiftIdx;
                     } else {
-                      this.opStatus = 'Inserting at Index #4';
+                      // Final insertion — the new block is GREEN
+                      this.opStatus = 'Inserting new block at Index #4 ✓';
                       threeState.interactiveCells = [4, -1];
+                      threeState.operationType = 'insert';
+                      threeState.highlightedCellIndex = 4;
                     }
                   } else {
                     this.activeOp = 'Deletion';
@@ -224,18 +251,25 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                     const innerP = (opP - 0.50) / 0.50;
                     const step = Math.floor(innerP * 12);
                     this.activeStep = step;
-                    
+
                     if (step <= 2) {
-                      this.opStatus = 'Removing Index #2';
+                      // Target block turns RED before deletion
+                      this.opStatus = 'Marking Index #2 for removal...';
                       threeState.interactiveCells = [2, -1];
+                      threeState.operationType = 'delete';
+                      threeState.highlightedCellIndex = 2;
                     } else if (step <= 10) {
-                      // Shift back phase (highlighting 3 up to 9)
-                      const shiftIdx = step - 1;
+                      // Shift back phase — highlight shifting cell in cyan
+                      const shiftIdx = Math.min(6, step - 1);
                       this.opStatus = `Shifting Index ${shiftIdx} → ${shiftIdx - 1}`;
                       threeState.interactiveCells = [shiftIdx, -1];
+                      threeState.operationType = 'search';
+                      threeState.highlightedCellIndex = shiftIdx;
                     } else {
-                      this.opStatus = 'Clean up';
+                      this.opStatus = 'Array compacted ✓';
                       threeState.interactiveCells = [-1, -1];
+                      threeState.operationType = 'none';
+                      threeState.highlightedCellIndex = -1;
                     }
                   }
                 }
@@ -308,8 +342,20 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
             });
           }
         },
-        onLeave: () => { if (threeState) threeState.interactiveCells = [-1, -1]; },
-        onLeaveBack: () => { if (threeState) threeState.interactiveCells = [-1, -1]; }
+        onLeave: () => {
+          if (threeState) {
+            threeState.interactiveCells = [-1, -1];
+            threeState.operationType = 'none';
+            threeState.highlightedCellIndex = -1;
+          }
+        },
+        onLeaveBack: () => {
+          if (threeState) {
+            threeState.interactiveCells = [-1, -1];
+            threeState.operationType = 'none';
+            threeState.highlightedCellIndex = -1;
+          }
+        }
       }));
 
       ScrollTrigger.refresh();
