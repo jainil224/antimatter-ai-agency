@@ -29,7 +29,7 @@ gsap.registerPlugin(ScrollTrigger);
 export class HomePageComponent implements AfterViewInit, OnDestroy {
   public activeDS = 'Array';
   public activeStep = 0;
-  public activeOp = 'Search';
+  public activeOp = 'Insertion';
   public opDescription = 'Watch how data is accessed and manipulated in real-time as you scroll through the memory blocks.';
   public timeComplexity = 'O(n)';
   public spaceComplexity = 'O(1)';
@@ -196,45 +196,12 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                   threeState.interactiveCell = -1;
                 } else {
                   const opP = (localP - 0.05) / 0.95;
-                  if (opP < 0.33) {
-                    this.activeOp = 'Two Sum';
-                    this.opDescription = 'Two Sum: Finding two numbers that add up to target (9)...';
-                    this.timeComplexity = 'O(n²)'; this.spaceComplexity = 'O(1)';
-                    const localStep = Math.floor((opP / 0.33) * 8);
-                    this.activeStep = localStep;
-                    
-                    if (localStep === 0) {
-                      this.opStatus = 'Starting Two Sum...';
-                      threeState.interactiveCells = [-1, -1];
-                    } else if (localStep === 1) {
-                      this.opStatus = 'Selecting i = 0 (Value: 2)';
-                      threeState.interactiveCells = [0, -1];
-                    } else if (localStep === 2) {
-                      this.opStatus = 'Checking j = 1 (Value: 7)';
-                      threeState.interactiveCells = [0, 1];
-                    } else if (localStep === 3) {
-                      this.opStatus = 'Checking j = 2 (Value: 11)';
-                      threeState.interactiveCells = [0, 2];
-                    } else if (localStep === 4) {
-                      this.opStatus = 'Checking j = 3 (Value: 15)';
-                      threeState.interactiveCells = [0, 3];
-                    } else if (localStep === 5) {
-                      this.opStatus = 'Selecting i = 1 (Value: 7)';
-                      threeState.interactiveCells = [1, -1];
-                    } else if (localStep === 6) {
-                      this.opStatus = 'Checking i=0 + j=1 = 9?';
-                      threeState.interactiveCells = [0, 1];
-                      threeState.activeHighlightColor.setHex(0xFACC15); // Yellow for compare
-                    } else {
-                      this.opStatus = 'MATCH FOUND: [0, 1]';
-                      threeState.interactiveCells = [0, 1];
-                      threeState.activeHighlightColor.setHex(0x22D3EE); // Cyan for found
-                    }
-                  } else if (opP < 0.66) {
+                  if (opP < 0.50) {
+
                     this.activeOp = 'Insertion';
                     this.opDescription = 'Insertion: Shifting elements for new data...';
                     this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(1)';
-                    const innerP = (opP - 0.33) / 0.33;
+                    const innerP = opP / 0.50;
                     const step = Math.floor(innerP * 12);
                     this.activeStep = step;
                     
@@ -254,7 +221,7 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                     this.activeOp = 'Deletion';
                     this.opDescription = 'Deletion: Removing element and shifting back...';
                     this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(1)';
-                    const innerP = (opP - 0.66) / 0.34;
+                    const innerP = (opP - 0.50) / 0.50;
                     const step = Math.floor(innerP * 12);
                     this.activeStep = step;
                     
