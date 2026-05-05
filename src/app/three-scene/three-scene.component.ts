@@ -645,6 +645,22 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
         this.headLabel.position.set(headX, headY, 0);
         (this.headLabel.material as any).opacity = lam;
     }
+
+    // Arrow morphing - arrows should appear as the structure flattens
+    this.linkedListArrows.forEach((arrow, i) => {
+      if (i < 4) {
+        const startX = this.lerp(treePos[i].x, llPositions[i].x, lam);
+        const endX = this.lerp(treePos[i+1].x, llPositions[i+1].x, lam);
+        const startY = this.lerp(treePos[i].y, llPositions[i].y, lam);
+        const endY = this.lerp(treePos[i+1].y, llPositions[i+1].y, lam);
+
+        arrow.position.set((startX + endX) / 2, (startY + endY) / 2, 0);
+        arrow.scale.set(lam, lam, lam);
+        arrow.children.forEach((child: any) => {
+          if (child.material) child.material.opacity = lam;
+        });
+      }
+    });
   }
 
   private morphLinkedListToQueue(lam: number) {
@@ -1120,12 +1136,12 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     // Visibility Logic - Ensure both are visible during the transition to prevent "jumping"
     const isArraySection = (this.morphSmooth > 0.5 && this.morphSmooth < 1.8) || (this.morphSmooth > 6.5 && this.morphSmooth < 7.8);
     const isStackSection = (this.morphSmooth > 1.2 && this.morphSmooth < 2.8) || (this.morphSmooth > 7.2 && this.morphSmooth < 8.8);
-    const isTreeSection = (this.morphSmooth > 2.2 && this.morphSmooth < 3.8) || (this.morphSmooth > 8.2);
+    const isTreeSection = (this.morphSmooth > 2.2 && this.morphSmooth < 3.8) || (this.morphSmooth > 8.2 && this.morphSmooth < 9.8);
     
     this.arrayGroup.visible = isArraySection;
     this.stackGroup.visible = isStackSection;
     this.treeGroup.visible = isTreeSection;
-    const isLinkedListSection = (this.morphSmooth > 3.2 && this.morphSmooth < 4.8);
+    const isLinkedListSection = (this.morphSmooth > 3.2 && this.morphSmooth < 4.8) || (this.morphSmooth > 9.2);
     this.linkedListGroup.visible = isLinkedListSection;
     const isQueueSection = (this.morphSmooth > 4.2 && this.morphSmooth < 5.8);
     this.queueGroup.visible = isQueueSection;
@@ -1209,11 +1225,22 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       stackOpacity = 1.0 - transitionLam;
       treeOpacity = transitionLam;
       this.morphStackToTree(transitionLam);
-    } else if (this.morphSmooth >= 8.8) {
+    } else if (this.morphSmooth >= 8.8 && this.morphSmooth <= 9.2) {
       // Interactive Tree (Fully visible)
       stackOpacity = 0;
       treeOpacity = 1.0;
       this.morphStackToTree(1.0);
+    } else if (this.morphSmooth > 9.2 && this.morphSmooth < 9.8) {
+      // Interactive Transition (9 -> 10)
+      const transitionLam = (this.morphSmooth - 9.2) / 0.6;
+      treeOpacity = 1.0 - transitionLam;
+      llOpacity = transitionLam;
+      this.morphTreeToLinkedList(transitionLam);
+    } else if (this.morphSmooth >= 9.8) {
+      // Interactive Linked List (Fully visible)
+      treeOpacity = 0;
+      llOpacity = 1.0;
+      this.morphTreeToLinkedList(1.0);
     }
     
     arrayOpacity = Math.max(0, Math.min(1, arrayOpacity));

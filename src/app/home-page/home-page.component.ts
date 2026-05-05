@@ -188,11 +188,11 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
         }
       }));
 
-      // 6. UNIFIED Interactive Section (Array -> Morph -> Stack -> Morph -> Tree)
+      // 6. UNIFIED Interactive Section (Array -> Morph -> Stack -> Morph -> Tree -> Morph -> LL)
       this.triggers.push(ScrollTrigger.create({
         trigger: '.interactive-section',
         start: 'top top',
-        end: '+=600%', // Increased for Tree operations
+        end: '+=800%',
         pin: true,
         scrub: true,
         onUpdate: (self) => {
@@ -203,122 +203,111 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
             threeState.scaleTarget = 0.95;
 
             this.ngZone.run(() => {
-              // --- PHASE 1: ARRAY OPERATIONS (0.0 - 0.35) ---
-              if (p < 0.35) {
+              // --- PHASE 1: ARRAY OPERATIONS (0.0 - 0.25) ---
+              if (p < 0.25) {
                 this.activeDS = 'Array';
-                threeState.scrollShapeTarget = 7; 
+                threeState.scrollShapeTarget = 7;
+                threeState.blastProgress = 0; 
                 
-                const localP = p / 0.35;
-                if (localP < 0.05) {
-                  this.activeOp = 'Settling';
-                  this.opDescription = 'Preparing Array memory blocks...';
-                  this.opStatus = 'Standby';
-                  threeState.interactiveCell = -1;
-                } else {
-                  const opP = (localP - 0.05) / 0.95;
-                  if (opP < 0.50) {
+                const localP = p / 0.25;
+                const step = Math.floor(localP * 12);
+                this.activeStep = step;
+                
+                if (step <= 5) {
+                  this.activeOp = 'Insertion';
+                  this.opDescription = 'Insertion: Shifting elements to make space...';
+                  this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(1)';
+                  
+                  const opP = localP / 0.50; // Map localP (0-0.5) to (0-1)
+                  const innerStep = Math.floor(opP * 12);
 
-                    this.activeOp = 'Insertion';
-                    this.opDescription = 'Insertion: Shifting elements for new data...';
-                    this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(1)';
-                    const innerP = opP / 0.50;
-                    const step = Math.floor(innerP * 12);
-                    this.activeStep = step;
-
-                    if (step <= 1) {
-                      this.opStatus = 'Initializing...';
-                      threeState.interactiveCells = [-1, -1];
-                      threeState.operationType = 'none';
-                      threeState.highlightedCellIndex = -1;
-                    } else if (step <= 7) {
-                      // Shifting phase — highlight the cell being shifted (cyan, neutral)
-                      const shiftIdx = Math.min(6, 7 - (step - 2));
-                      this.opStatus = `Shifting Index ${shiftIdx} → ${shiftIdx + 1}`;
-                      threeState.interactiveCells = [shiftIdx, -1];
-                      threeState.operationType = 'search'; // use cyan for shifting
-                      threeState.highlightedCellIndex = shiftIdx;
-                    } else {
-                      // Final insertion — the new block is GREEN
-                      this.opStatus = 'Inserting new block at Index #4 ✓';
-                      threeState.interactiveCells = [4, -1];
-                      threeState.operationType = 'insert';
-                      threeState.highlightedCellIndex = 4;
-                    }
+                  if (innerStep <= 2) {
+                    this.opStatus = 'Target Index #4: Need to shift right...';
+                    threeState.interactiveCells = [-1, -1];
+                    threeState.operationType = 'none';
+                    threeState.highlightedCellIndex = -1;
+                  } else if (innerStep <= 7) {
+                    const shiftIdx = Math.min(6, 7 - (innerStep - 2));
+                    this.opStatus = `Shifting Index ${shiftIdx} → ${shiftIdx + 1}`;
+                    threeState.interactiveCells = [shiftIdx, -1];
+                    threeState.operationType = 'search'; 
+                    threeState.highlightedCellIndex = shiftIdx;
                   } else {
-                    this.activeOp = 'Deletion';
-                    this.opDescription = 'Deletion: Removing element and shifting back...';
-                    this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(1)';
-                    const innerP = (opP - 0.50) / 0.50;
-                    const step = Math.floor(innerP * 12);
-                    this.activeStep = step;
+                    this.opStatus = 'Inserting new block at Index #4 ✓';
+                    threeState.interactiveCells = [4, -1];
+                    threeState.operationType = 'insert';
+                    threeState.highlightedCellIndex = 4;
+                  }
+                } else {
+                  this.activeOp = 'Deletion';
+                  this.opDescription = 'Deletion: Removing element and shifting back...';
+                  this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(1)';
+                  
+                  const opP = (localP - 0.50) / 0.50; // Map localP (0.5-1.0) to (0-1)
+                  const innerStep = Math.floor(opP * 12);
 
-                    if (step <= 2) {
-                      // Target block turns RED before deletion
-                      this.opStatus = 'Marking Index #2 for removal...';
-                      threeState.interactiveCells = [2, -1];
-                      threeState.operationType = 'delete';
-                      threeState.highlightedCellIndex = 2;
-                    } else if (step <= 10) {
-                      // Shift back phase — highlight shifting cell in cyan
-                      const shiftIdx = Math.min(6, step - 1);
-                      this.opStatus = `Shifting Index ${shiftIdx} → ${shiftIdx - 1}`;
-                      threeState.interactiveCells = [shiftIdx, -1];
-                      threeState.operationType = 'search';
-                      threeState.highlightedCellIndex = shiftIdx;
-                    } else {
-                      this.opStatus = 'Array compacted ✓';
-                      threeState.interactiveCells = [-1, -1];
-                      threeState.operationType = 'none';
-                      threeState.highlightedCellIndex = -1;
-                    }
+                  if (innerStep <= 2) {
+                    this.opStatus = 'Marking Index #2 for removal...';
+                    threeState.interactiveCells = [2, -1];
+                    threeState.operationType = 'delete';
+                    threeState.highlightedCellIndex = 2;
+                  } else if (innerStep <= 10) {
+                    const shiftIdx = Math.min(6, innerStep - 1);
+                    this.opStatus = `Shifting Index ${shiftIdx} → ${shiftIdx - 1}`;
+                    threeState.interactiveCells = [shiftIdx, -1];
+                    threeState.operationType = 'search';
+                    threeState.highlightedCellIndex = shiftIdx;
+                  } else {
+                    this.opStatus = 'Array compacted ✓';
+                    threeState.interactiveCells = [-1, -1];
+                    threeState.operationType = 'none';
+                    threeState.highlightedCellIndex = -1;
                   }
                 }
               } 
-              // --- PHASE 2: MORPH TRANSITION TO STACK (0.35 - 0.40) ---
-              else if (p < 0.40) {
+              // --- PHASE 2: MORPH TRANSITION TO STACK (0.25 - 0.30) ---
+              else if (p < 0.30) {
                 this.activeDS = 'Stack';
                 this.activeOp = 'Morphing';
                 this.opDescription = 'Converting Array to Stack (LIFO)...';
                 this.opStatus = 'Restructuring...';
                 
-                const localP = (p - 0.35) / 0.05;
+                const localP = (p - 0.25) / 0.05;
                 threeState.scrollShapeTarget = 7 + localP; // Tie transition to scroll progress
                 threeState.interactiveCells = [-1, -1];
               }
-              // --- PHASE 3: STACK OPERATIONS (0.40 - 0.70) ---
-              else if (p < 0.70) {
+               // --- PHASE 3: STACK OPERATIONS (0.30 - 0.50) ---
+              else if (p < 0.50) {
                 this.activeDS = 'Stack';
                 threeState.scrollShapeTarget = 8; 
                 threeState.blastProgress = 0; 
                 
-                const localP = (p - 0.40) / 0.30;
+                const localP = (p - 0.30) / 0.20;
                 const step = Math.floor(localP * 12);
                 this.activeStep = step;
 
                 if (step <= 2) {
                   this.activeOp = 'Push';
-                  this.opDescription = 'Push: Adding element to the TOP.';
+                  this.opDescription = 'Push: Adding element to the TOP of the stack.';
                   this.timeComplexity = 'O(1)'; this.spaceComplexity = 'O(1)';
-                  this.opStatus = 'Pushing 25 to TOP';
+                  this.opStatus = step === 2 ? `Pushed 25 ✓` : 'Pushing 25 to TOP...';
                   
-                  const pPush = Math.min(1, step / 2.0);
-                  threeState.interactiveCells = [0, -1];
+                  threeState.interactiveCells = [0, -1]; // Index 0 is the physical top
                   threeState.activeHighlightColor.setHex(0x00FF88); 
-                  threeState.activeCellScale = 0.3 + 0.7 * pPush;
-                  threeState.activeCellOpacity = pPush;
+                  threeState.activeCellScale = step === 2 ? 1.2 : 1.05;
+                  threeState.activeCellOpacity = 1.0;
                   threeState.operationType = 'insert';
                   threeState.highlightedCellIndex = 0;
                 } else if (step <= 5) {
                   this.activeOp = 'Pop';
-                  this.opDescription = 'Pop: Removing element from TOP (LIFO).';
+                  this.opDescription = 'Pop: Removing element from the TOP of the stack.';
                   this.timeComplexity = 'O(1)'; this.spaceComplexity = 'O(1)';
-                  this.opStatus = 'Popping TOP element';
+                  this.opStatus = step === 5 ? `Popped 25 ✓` : 'Removing 25 from TOP...';
                   
-                  const pPop = Math.min(1, (step - 3) / 2.0);
                   threeState.interactiveCells = [0, -1];
-                  threeState.activeHighlightColor.setHex(0xFF3333); // Explicit Red for Pop
-                  threeState.activeCellScale = 1.0 - 0.4 * pPop;
-                  threeState.activeCellOpacity = 1.0 - pPop;
+                  threeState.activeHighlightColor.setHex(0xFF3333); 
+                  threeState.activeCellScale = step === 5 ? 0.8 : 1.0;
+                  threeState.activeCellOpacity = step === 5 ? 0.2 : 0.8;
                   threeState.operationType = 'delete';
                   threeState.highlightedCellIndex = 0;
                 } else if (step <= 10) {
@@ -330,7 +319,7 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                   
                   threeState.interactiveCells = [searchIdx, -1];
                   threeState.activeHighlightColor.setHex(0xFACC15);
-                  threeState.activeCellScale = 1.05; // Subtle pop when searching
+                  threeState.activeCellScale = 1.05; 
                   threeState.activeCellOpacity = 1.0;
                   threeState.operationType = 'search';
                   threeState.highlightedCellIndex = searchIdx;
@@ -344,29 +333,29 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                   threeState.activeHighlightColor.setHex(0xA855F7);
                   threeState.activeCellScale = 1.0;
                   threeState.activeCellOpacity = 1.0;
-                  threeState.operationType = 'search'; // Using search style for peek
+                  threeState.operationType = 'search'; 
                   threeState.highlightedCellIndex = 0;
                 }
               }
-              // --- PHASE 4: MORPH TRANSITION TO TREE (0.70 - 0.75) ---
-              else if (p < 0.75) {
+              // --- PHASE 4: MORPH TRANSITION TO TREE (0.50 - 0.55) ---
+              else if (p < 0.55) {
                 this.activeDS = 'Tree';
                 this.activeOp = 'Morphing';
                 this.opDescription = 'Converting Stack to Binary Tree...';
                 this.opStatus = 'Restructuring...';
                 
-                const localP = (p - 0.70) / 0.05;
+                const localP = (p - 0.50) / 0.05;
                 threeState.scrollShapeTarget = 8 + localP; // Tie transition to scroll progress
                 threeState.interactiveCells = [-1, -1];
                 threeState.operationType = 'none';
               }
-              // --- PHASE 5: TREE OPERATIONS (0.75 - 1.0) ---
-              else {
+              // --- PHASE 5: TREE OPERATIONS (0.55 - 0.75) ---
+              else if (p < 0.75) {
                 this.activeDS = 'Tree';
                 threeState.scrollShapeTarget = 9; 
                 threeState.blastProgress = 0; 
                 
-                const localP = (p - 0.75) / 0.25;
+                const localP = (p - 0.55) / 0.20;
                 const step = Math.floor(localP * 12);
                 this.activeStep = step;
 
@@ -375,14 +364,13 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                   this.opDescription = 'Insert: Adding a new node to the BST';
                   this.timeComplexity = 'O(log n)'; this.spaceComplexity = 'O(1)';
                   
-                  // Mock insert path for value 10: Root(12) -> Left(9) -> Right(10)
                   const insertPath = [0, 1, 4]; 
                   const tIdx = Math.min(2, Math.floor(step / 2));
                   const nodeIdx = insertPath[tIdx];
                   this.opStatus = tIdx === 2 ? `Inserted node 10!` : `Traversing to insert 10...`;
                   
                   threeState.interactiveCells = [nodeIdx, -1];
-                  threeState.activeHighlightColor.setHex(0x00FF88); // Green
+                  threeState.activeHighlightColor.setHex(0x00FF88); 
                   threeState.activeCellScale = tIdx === 2 ? 1.2 : 1.05;
                   threeState.activeCellOpacity = 1.0;
                   threeState.operationType = 'insert';
@@ -392,18 +380,80 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
                   this.opDescription = 'Delete: Removing a node from the BST';
                   this.timeComplexity = 'O(log n)'; this.spaceComplexity = 'O(1)';
                   
-                  // Mock delete path for value 99: Root(12) -> Right(40) -> Right(99)
                   const deletePath = [0, 2, 6]; 
                   const sIdx = Math.min(2, Math.floor((step - 6) / 2));
                   const nodeIdx = deletePath[sIdx];
                   this.opStatus = sIdx === 2 ? `Deleted node 99!` : `Traversing to delete 99...`;
                   
                   threeState.interactiveCells = [nodeIdx, -1];
-                  threeState.activeHighlightColor.setHex(0xFF3333); // Red
+                  threeState.activeHighlightColor.setHex(0xFF3333); 
                   threeState.activeCellScale = sIdx === 2 ? 1.2 : 1.05;
                   threeState.activeCellOpacity = 1.0;
                   threeState.operationType = 'delete';
                   threeState.highlightedCellIndex = nodeIdx;
+                }
+              }
+              // --- PHASE 6: MORPH TRANSITION TO LINKED LIST (0.75 - 0.80) ---
+              else if (p < 0.80) {
+                this.activeDS = 'Linked List';
+                this.activeOp = 'Morphing';
+                this.opDescription = 'Converting Binary Tree to Linked List...';
+                this.opStatus = 'Flattening structure...';
+                
+                const localP = (p - 0.75) / 0.05;
+                threeState.scrollShapeTarget = 9 + localP; // 9 -> 10
+                threeState.interactiveCells = [-1, -1];
+                threeState.operationType = 'none';
+              }
+              // --- PHASE 7: LINKED LIST OPERATIONS (0.80 - 1.0) ---
+              else {
+                this.activeDS = 'Linked List';
+                threeState.scrollShapeTarget = 10;
+                threeState.blastProgress = 0;
+                
+                const localP = (p - 0.80) / 0.20;
+                const step = Math.floor(localP * 12);
+                this.activeStep = step;
+                
+                if (step <= 3) {
+                  this.activeOp = 'Traversal';
+                  this.opDescription = 'Traversal: Following pointers sequentially.';
+                  this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(1)';
+                  
+                  const nodeIdx = Math.min(4, step);
+                  this.opStatus = `Visiting node ${nodeIdx}...`;
+                  
+                  threeState.interactiveCells = [nodeIdx, -1];
+                  threeState.activeHighlightColor.setHex(0x22D3EE); // Cyan
+                  threeState.activeCellScale = 1.1;
+                  threeState.operationType = 'search';
+                  threeState.highlightedCellIndex = nodeIdx;
+                } else if (step <= 7) {
+                  this.activeOp = 'Insertion';
+                  this.opDescription = 'Insertion: Adding a new node at the end.';
+                  this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(1)';
+                  
+                  const nodeIdx = 4; // Highlight last node
+                  this.opStatus = step === 7 ? 'New node 50 inserted!' : 'Traversing to end...';
+                  
+                  threeState.interactiveCells = [nodeIdx, -1];
+                  threeState.activeHighlightColor.setHex(0x00FF88); // Green
+                  threeState.activeCellScale = step === 7 ? 1.2 : 1.05;
+                  threeState.operationType = 'insert';
+                  threeState.highlightedCellIndex = nodeIdx;
+                } else {
+                  this.activeOp = 'Searching';
+                  this.opDescription = 'Searching: Looking for a specific value.';
+                  this.timeComplexity = 'O(n)'; this.spaceComplexity = 'O(1)';
+                  
+                  const searchIdx = Math.min(2, step - 8); // Search for 30 (index 2)
+                  this.opStatus = searchIdx === 2 ? 'Value 30 found!' : `Checking node ${searchIdx}...`;
+                  
+                  threeState.interactiveCells = [searchIdx, -1];
+                  threeState.activeHighlightColor.setHex(0xFACC15); // Yellow
+                  threeState.activeCellScale = 1.1;
+                  threeState.operationType = 'search';
+                  threeState.highlightedCellIndex = searchIdx;
                 }
               }
               this.cdr.detectChanges();
