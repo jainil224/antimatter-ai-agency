@@ -667,39 +667,57 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     const llSpacing = 2.2;
     const qSpacing = 1.6;
     
+    // Split the transition into two halves to prevent "mixing up"
+    // 0.0 -> 0.4: Fade out LL
+    // 0.4 -> 0.6: Move/Morph geometry
+    // 0.6 -> 1.0: Fade in Queue
+    
+    const llFade = Math.max(0, Math.min(1, 1 - (lam / 0.4)));
+    const qFade = Math.max(0, Math.min(1, (lam - 0.6) / 0.4));
+    const morphLam = Math.max(0, Math.min(1, (lam - 0.2) / 0.6)); // Movement happens in the middle
+
     for (let i = 0; i < 5; i++) {
         const llX = (i - 2) * llSpacing;
         const qX = (i - 2) * qSpacing;
-        
-        const tx = this.lerp(llX, qX, lam);
+        const tx = this.lerp(llX, qX, morphLam);
         
         if (this.linkedListCubes[i]) {
             this.linkedListCubes[i].position.set(tx, 0, 0);
-            this.linkedListCubes[i].scale.set(1 - lam * 0.5, 1 - lam * 0.5, 1 - lam * 0.5);
-            (this.linkedListCubes[i].material as any).opacity = (1.0 - lam);
+            // LL nodes "deflate" as they vanish
+            const s = 1 - (lam * 0.3);
+            this.linkedListCubes[i].scale.set(s, s, s);
+            (this.linkedListCubes[i].material as any).opacity = llFade;
         }
         
         if (this.queueNodes[i]) {
             this.queueNodes[i].position.set(tx, 0, 0);
-            (this.queueNodes[i].material as any).opacity = lam;
+            // Queue nodes "inflate" as they appear
+            const s = 0.7 + (qFade * 0.3);
+            this.queueNodes[i].scale.set(s, s, s);
+            (this.queueNodes[i].material as any).opacity = qFade;
         }
+        
         if (this.queueLabels[i]) {
             this.queueLabels[i].position.set(tx, 0, 0.1);
-            (this.queueLabels[i].material as any).opacity = lam;
+            (this.queueLabels[i].material as any).opacity = qFade;
+        }
+        
+        if (this.linkedListLabels[i]) {
+            (this.linkedListLabels[i].material as any).opacity = llFade;
         }
     }
     
     // Fade out LL arrows and head label
     this.linkedListArrows.forEach(arrow => {
         arrow.children.forEach((child: any) => {
-            if (child.material) (child.material as any).opacity = (1.0 - lam);
+            if (child.material) (child.material as any).opacity = llFade;
         });
     });
-    if (this.headLabel) (this.headLabel.material as any).opacity = (1.0 - lam);
+    if (this.headLabel) (this.headLabel.material as any).opacity = llFade;
     
     // Fade in FRONT/REAR labels
-    if (this.frontLabel) (this.frontLabel.material as any).opacity = lam;
-    if (this.rearLabel) (this.rearLabel.material as any).opacity = lam;
+    if (this.frontLabel) (this.frontLabel.material as any).opacity = qFade;
+    if (this.rearLabel) (this.rearLabel.material as any).opacity = qFade;
   }
 
   private generateShapes() {
@@ -1141,9 +1159,9 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.arrayGroup.visible = isArraySection;
     this.stackGroup.visible = isStackSection;
     this.treeGroup.visible = isTreeSection;
-    const isLinkedListSection = (this.morphSmooth > 3.2 && this.morphSmooth < 4.8) || (this.morphSmooth > 9.2);
+    const isLinkedListSection = (this.morphSmooth > 3.2 && this.morphSmooth < 4.8) || (this.morphSmooth > 9.2 && this.morphSmooth < 10.8);
     this.linkedListGroup.visible = isLinkedListSection;
-    const isQueueSection = (this.morphSmooth > 4.2 && this.morphSmooth < 5.8);
+    const isQueueSection = (this.morphSmooth > 4.2 && this.morphSmooth < 5.8) || (this.morphSmooth > 10.2);
     this.queueGroup.visible = isQueueSection;
     
     // Fade Logic
@@ -1236,11 +1254,23 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       treeOpacity = 1.0 - transitionLam;
       llOpacity = transitionLam;
       this.morphTreeToLinkedList(transitionLam);
-    } else if (this.morphSmooth >= 9.8) {
+    } else if (this.morphSmooth >= 9.8 && this.morphSmooth <= 10.2) {
       // Interactive Linked List (Fully visible)
       treeOpacity = 0;
       llOpacity = 1.0;
       this.morphTreeToLinkedList(1.0);
+    } else if (this.morphSmooth > 10.2 && this.morphSmooth < 10.8) {
+      // Interactive Transition (10 -> 11)
+      const transitionLam = (this.morphSmooth - 10.2) / 0.6;
+      this.morphLinkedListToQueue(transitionLam);
+      // Group opacities are now handled internally by morphLinkedListToQueue for smoothness
+      llOpacity = 1.0; 
+      qOpacity = 1.0;
+    } else if (this.morphSmooth >= 10.8) {
+      // Interactive Queue (Fully visible)
+      llOpacity = 0;
+      qOpacity = 1.0;
+      this.morphLinkedListToQueue(1.0);
     }
     
     arrayOpacity = Math.max(0, Math.min(1, arrayOpacity));
@@ -1416,6 +1446,39 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
        (this.headLabel.material as any).opacity = llOpacity * globalOpacity;
     }
 
+    // ── QUEUE COLOR CODING ──────────────────────────────────────────
+    this.queueNodes.forEach((node, i) => {
+      const mat = node.material as THREE.LineBasicMaterial;
+      const isActive = i === this.highlightedCellIndex && this.operationType !== 'none' && qOpacity > 0;
+      
+      const desired = isActive ? targetColor : defaultColor;
+      mat.color.lerp(desired, 0.18);
+      
+      if (isActive && this.operationType === 'insert') {
+          node.scale.set(this.activeCellScale, this.activeCellScale, this.activeCellScale);
+          mat.opacity = this.activeCellOpacity * qOpacity * globalOpacity;
+      } else if (isActive) {
+          const pulse = 1.0 + Math.sin(performance.now() * 0.008) * 0.08;
+          node.scale.set(pulse, pulse, pulse);
+          mat.opacity = Math.min(1.0, (qOpacity * globalOpacity) + 0.15);
+      } else {
+          node.scale.set(
+            this.lerp(node.scale.x, 1.0, 0.15),
+            this.lerp(node.scale.y, 1.0, 0.15),
+            this.lerp(node.scale.z, 1.0, 0.15)
+          );
+          mat.opacity = qOpacity * globalOpacity;
+      }
+
+      if (this.queueLabels[i]) {
+         const labelMat = this.queueLabels[i].material as THREE.SpriteMaterial;
+         labelMat.opacity = qOpacity * globalOpacity;
+      }
+    });
+
+    if (this.frontLabel) (this.frontLabel.material as any).opacity = qOpacity * globalOpacity;
+    if (this.rearLabel) (this.rearLabel.material as any).opacity = qOpacity * globalOpacity;
+
     // Aggressively hide particles when in solid Array, Stack or Tree sections
     const nearArray1 = Math.abs(this.morphSmooth - 1.0) < 0.5;
     const nearStack2 = Math.abs(this.morphSmooth - 2.0) < 0.5;
@@ -1424,9 +1487,11 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     const nearQueue5 = Math.abs(this.morphSmooth - 5.0) < 0.8;
     const nearArray7 = this.morphSmooth > 5.8 && this.morphSmooth < 7.8;
     const nearStack8 = this.morphSmooth > 7.8 && this.morphSmooth < 8.8;
-    const nearTree9 = this.morphSmooth > 8.8;
+    const nearTree9 = this.morphSmooth > 8.8 && this.morphSmooth < 9.8;
+    const nearLL10 = this.morphSmooth > 9.8 && this.morphSmooth < 10.8;
+    const nearQueue11 = this.morphSmooth > 10.8;
     
-    if (nearArray1 || nearStack2 || nearTree3 || nearLL4 || nearQueue5 || nearArray7 || nearStack8 || nearTree9) {
+    if (nearArray1 || nearStack2 || nearTree3 || nearLL4 || nearQueue5 || nearArray7 || nearStack8 || nearTree9 || nearLL10 || nearQueue11) {
         this.mat.uniforms['uGlobalOpacity'].value = 0.0;
     } else {
         this.mat.uniforms['uGlobalOpacity'].value = globalOpacity;
