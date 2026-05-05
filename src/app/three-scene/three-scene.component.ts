@@ -1038,6 +1038,17 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     );
 
     this.pts.rotation.y = this.frameRotation + this.scrollRotationOffsetSmooth;
+    
+    // Pulse and auto-rotate when on the Hero section (morphSmooth near 0)
+    if (this.morphSmooth < 0.5) {
+      this.pts.rotation.y += performance.now() * 0.0001; 
+      this.pts.rotation.x += performance.now() * 0.00005;
+      const pulse = 1.0 + Math.sin(performance.now() * 0.001) * 0.05;
+      this.pts.scale.set(pulse, pulse, pulse);
+    } else {
+      this.pts.scale.set(1, 1, 1);
+    }
+
     // Restore 3D tilt for the 'premium' image look
     const baseTiltX = 0.15;
     const baseTiltY = 0.2;

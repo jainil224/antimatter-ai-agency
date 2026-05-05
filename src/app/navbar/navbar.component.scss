@@ -3,20 +3,19 @@
   top: 0;
   width: 100%;
   z-index: 50;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--border);
-  padding: 22px 5%;
+  background: rgba(0, 0, 0, 0.0); // Completely transparent
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 30px 6%;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .logo {
-  font-weight: 700;
-  font-size: 1.1rem;
-  letter-spacing: 2px;
+  font-weight: 600;
+  font-size: 1.3rem;
+  letter-spacing: -0.5px;
 }
 
 .nav-links {
@@ -35,17 +34,19 @@
 }
 
 .btn-pill {
-  background: rgba(6, 182, 212, 0.12);
-  border: 1px solid var(--accent);
-  padding: 10px 22px;
+  background: transparent;
+  border: 1.5px solid #22D3EE; // Specific cyan
+  padding: 12px 26px;
   border-radius: 50px;
-  box-shadow: 0 0 18px rgba(6, 182, 212, 0.35);
-  color: var(--white);
-  font-size: 0.88rem;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
 
   &:hover {
-    background: var(--accent);
-    box-shadow: 0 0 28px rgba(6, 182, 212, 0.7);
+    background: rgba(34, 211, 238, 0.1);
+    box-shadow: 0 0 25px rgba(34, 211, 238, 0.7);
+    transform: translateY(-1px);
   }
 }
