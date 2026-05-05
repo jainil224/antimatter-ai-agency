@@ -188,12 +188,6 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       this.arrayLabels.push(valSprite);
       this.arrayGroup.add(valSprite);
 
-      // "INDEX" Header - Small and Grey
-      const headerLabel = this.createLabelSprite('INDEX', '#94A3B8', 50);
-      headerLabel.position.set(x, 1.45, 0);
-      headerLabel.scale.set(0.5, 0.5, 1);
-      this.arrayHeaderLabels.push(headerLabel);
-      this.arrayGroup.add(headerLabel);
     }
   }
 
@@ -252,19 +246,19 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.scene.add(this.treeGroup);
 
     const numCells = 7;
-    const radius = 0.8;
+    const radius = 0.95; // Increased radius
     const values = [12, 9, 40, 5, 10, 25, 99];
     const positions = [
-      { x: 0, y: 1.8 },      // Root (0)
-      { x: -1.8, y: 0.4 },   // L1 (1)
-      { x: 1.8, y: 0.4 },    // L1 (2)
-      { x: -2.7, y: -1.0 },  // L2 (3)
-      { x: -0.9, y: -1.0 },  // L2 (4)
-      { x: 0.9, y: -1.0 },   // L2 (5)
-      { x: 2.7, y: -1.0 }    // L2 (6)
+      { x: 0, y: 2.8 },      // Root (0)
+      { x: -2.6, y: 0.8 },   // L1 (1)
+      { x: 2.6, y: 0.8 },    // L1 (2)
+      { x: -3.9, y: -1.2 },  // L2 (3)
+      { x: -1.3, y: -1.2 },  // L2 (4)
+      { x: 1.3, y: -1.2 },   // L2 (5)
+      { x: 3.9, y: -1.2 }    // L2 (6)
     ];
 
-    const sphereGeo = new THREE.SphereGeometry(radius, 16, 16);
+    const sphereGeo = new THREE.SphereGeometry(radius, 24, 24); // More segments for smoothness
     const edgesGeo = new THREE.EdgesGeometry(sphereGeo);
     const lineMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9 });
 
@@ -424,10 +418,6 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
             this.arrayLabels[i].position.set(x, 0, 0.1);
             this.arrayLabels[i].scale.set(1.4, 1.4, 1);
         }
-        if (this.arrayHeaderLabels[i]) {
-            this.arrayHeaderLabels[i].position.set(x, 1.45, 0);
-            this.arrayHeaderLabels[i].scale.set(0.5, 0.5, 1);
-        }
     });
 
     const stackSpacing = 1.5;
@@ -442,8 +432,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     });
 
     const treePos = [
-      { x: 0, y: 1.8 }, { x: -1.8, y: 0.4 }, { x: 1.8, y: 0.4 },
-      { x: -2.7, y: -1.0 }, { x: -0.9, y: -1.0 }, { x: 0.9, y: -1.0 }, { x: 2.7, y: -1.0 }
+      { x: 0, y: 2.8 }, { x: -2.6, y: 0.8 }, { x: 2.6, y: 0.8 },
+      { x: -3.9, y: -1.2 }, { x: -1.3, y: -1.2 }, { x: 1.3, y: -1.2 }, { x: 3.9, y: -1.2 }
     ];
     this.treeNodes.forEach((node, i) => {
         const pos = treePos[i];
@@ -521,8 +511,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   private morphStackToTree(lam: number) {
     const stackSpacing = 1.5;
     const treePos = [
-      { x: 0, y: 1.8 }, { x: -1.8, y: 0.4 }, { x: 1.8, y: 0.4 },
-      { x: -2.7, y: -1.0 }, { x: -0.9, y: -1.0 }, { x: 0.9, y: -1.0 }, { x: 2.7, y: -1.0 }
+      { x: 0, y: 2.8 }, { x: -2.6, y: 0.8 }, { x: 2.6, y: 0.8 },
+      { x: -3.9, y: -1.2 }, { x: -1.3, y: -1.2 }, { x: 1.3, y: -1.2 }, { x: 3.9, y: -1.2 }
     ];
 
     for (let i = 0; i < 7; i++) {
@@ -547,8 +537,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
 
   private morphTreeToLinkedList(lam: number) {
     const treePos = [
-      { x: 0, y: 1.8 }, { x: -1.8, y: 0.4 }, { x: 1.8, y: 0.4 },
-      { x: -2.7, y: -1.0 }, { x: -0.9, y: -1.0 }, { x: 0.9, y: -1.0 }, { x: 2.7, y: -1.0 }
+      { x: 0, y: 2.8 }, { x: -2.6, y: 0.8 }, { x: 2.6, y: 0.8 },
+      { x: -3.9, y: -1.2 }, { x: -1.3, y: -1.2 }, { x: 1.3, y: -1.2 }, { x: 3.9, y: -1.2 }
     ];
     const llSpacing = 2.2;
     const llPositions = [
@@ -590,7 +580,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     // Head label placement
     if (this.headLabel) {
         const headX = this.lerp(treePos[0].x, llPositions[0].x, lam);
-        const headY = this.lerp(1.8 + 0.8, 1.4, lam);
+        const headY = this.lerp(2.8 + 0.9, 1.4, lam); // Root y is now 2.8
         this.headLabel.position.set(headX, headY, 0);
         (this.headLabel.material as any).opacity = lam;
     }
@@ -1024,7 +1014,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.mat.uniforms['uActiveCellScale'].value = this.activeCellScale;
     
     // Global opacity: 0 at the very top (Hero), fades in as we scroll to services/data structures
-    const globalOpacity = Math.min(1.0, Math.max(0.0, (this.morphSmooth - 0.05) * 4.0));
+    // Delaying fade-in to 0.6 to keep the landing page clean from "extra" particles
+    const globalOpacity = Math.min(1.0, Math.max(0.0, (this.morphSmooth - 0.5) * 5.0));
     this.mat.uniforms['uGlobalOpacity'].value = globalOpacity;
 
     // 1. Y-axis auto rotation - DISABLED (Static scene)
