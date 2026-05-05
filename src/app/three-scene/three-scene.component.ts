@@ -41,7 +41,20 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   private arrayIndices: THREE.Sprite[] = [];
   private stackLabels: THREE.Sprite[] = [];
   private treeLabels: THREE.Sprite[] = [];
+  private arrayHeaderLabels: THREE.Sprite[] = [];
   private stackIndices: THREE.Sprite[] = [];
+
+  private linkedListGroup!: THREE.Group;
+  private linkedListCubes: THREE.LineSegments[] = [];
+  private linkedListLabels: THREE.Sprite[] = [];
+  private linkedListArrows: THREE.Group[] = [];
+  private headLabel!: THREE.Sprite;
+
+  private queueGroup!: THREE.Group;
+  private queueNodes: THREE.LineSegments[] = [];
+  private queueLabels: THREE.Sprite[] = [];
+  private frontLabel!: THREE.Sprite;
+  private rearLabel!: THREE.Sprite;
 
   private N = 25000; // Increased from 15000 for higher detail
   private pts!: THREE.Points;
@@ -95,7 +108,9 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.initThree();
     this.createSolidArray(); 
     this.createSolidStack(); 
-    this.createSolidTree(); // New: Create solid wireframe tree
+    this.createSolidTree(); 
+    this.createSolidLinkedList(); 
+    this.createSolidQueue(); 
     this.generateShapes();
     this.initParticles();
 
@@ -177,6 +192,7 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       const headerLabel = this.createLabelSprite('INDEX', '#94A3B8', 50);
       headerLabel.position.set(x, 1.45, 0);
       headerLabel.scale.set(0.5, 0.5, 1);
+      this.arrayHeaderLabels.push(headerLabel);
       this.arrayGroup.add(headerLabel);
     }
   }
@@ -280,6 +296,98 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  private createSolidLinkedList() {
+    this.linkedListGroup = new THREE.Group();
+    this.linkedListGroup.visible = false;
+    this.scene.add(this.linkedListGroup);
+
+    const numCells = 5;
+    const size = 1.42;
+    const spacing = 2.2; 
+    const values = [5, 25, 30, 20, 10];
+
+    const boxGeo = new THREE.BoxGeometry(size, size, size);
+    const edgesGeo = new THREE.EdgesGeometry(boxGeo);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9, linewidth: 2 });
+
+    for (let i = 0; i < numCells; i++) {
+      const cube = new THREE.LineSegments(edgesGeo, lineMat);
+      const x = (i - (numCells - 1) / 2) * spacing;
+      cube.position.set(x, 0, 0);
+      this.linkedListCubes.push(cube);
+      this.linkedListGroup.add(cube);
+
+      const valSprite = this.createLabelSprite(values[i].toString(), '#FACC15', 140);
+      valSprite.position.set(x, 0, 0.1);
+      valSprite.scale.set(1.4, 1.4, 1);
+      this.linkedListLabels.push(valSprite);
+      this.linkedListGroup.add(valSprite);
+
+      // Add Arrow (except for last node)
+      if (i < numCells - 1) {
+        const arrowGroup = new THREE.Group();
+        const arrowBodyGeo = new THREE.BoxGeometry(0.6, 0.08, 0.08);
+        const arrowBody = new THREE.Mesh(arrowBodyGeo, new THREE.MeshBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.8 }));
+        
+        const arrowHeadGeo = new THREE.ConeGeometry(0.12, 0.25, 4);
+        const arrowHead = new THREE.Mesh(arrowHeadGeo, new THREE.MeshBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.8 }));
+        arrowHead.rotation.z = -Math.PI / 2;
+        arrowHead.position.x = 0.35;
+
+        arrowGroup.add(arrowBody);
+        arrowGroup.add(arrowHead);
+        arrowGroup.position.set(x + spacing / 2, 0, 0);
+        this.linkedListArrows.push(arrowGroup);
+        this.linkedListGroup.add(arrowGroup);
+      }
+    }
+
+    // "HEAD" Label
+    this.headLabel = this.createLabelSprite('HEAD', '#FACC15', 80);
+    this.headLabel.position.set(-(numCells - 1) / 2 * spacing, 1.4, 0);
+    this.headLabel.scale.set(1.0, 1.0, 1);
+    this.linkedListGroup.add(this.headLabel);
+  }
+
+  private createSolidQueue() {
+    this.queueGroup = new THREE.Group();
+    this.queueGroup.visible = false;
+    this.scene.add(this.queueGroup);
+
+    const numCells = 5;
+    const radius = 0.85;
+    const spacing = 1.6; 
+    const values = [5, 25, 30, 20, 10];
+
+    const icosaGeo = new THREE.IcosahedronGeometry(radius, 1);
+    const edgesGeo = new THREE.EdgesGeometry(icosaGeo);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x22D3EE, transparent: true, opacity: 0.9, linewidth: 2 });
+
+    for (let i = 0; i < numCells; i++) {
+      const node = new THREE.LineSegments(edgesGeo, lineMat);
+      const x = (i - (numCells - 1) / 2) * spacing;
+      node.position.set(x, 0, 0);
+      this.queueNodes.push(node);
+      this.queueGroup.add(node);
+
+      const valSprite = this.createLabelSprite(values[i].toString(), '#FACC15', 140);
+      valSprite.position.set(x, 0, 0.1);
+      valSprite.scale.set(1.4, 1.4, 1);
+      this.queueLabels.push(valSprite);
+      this.queueGroup.add(valSprite);
+    }
+
+    this.frontLabel = this.createLabelSprite('FRONT', '#FACC15', 80);
+    this.frontLabel.position.set(-(numCells / 2) * spacing - 0.8, 0, 0);
+    this.frontLabel.scale.set(1.2, 1.2, 1);
+    this.queueGroup.add(this.frontLabel);
+
+    this.rearLabel = this.createLabelSprite('REAR', '#FACC15', 80);
+    this.rearLabel.position.set((numCells / 2) * spacing + 0.8, 0, 0);
+    this.rearLabel.scale.set(1.2, 1.2, 1);
+    this.queueGroup.add(this.rearLabel);
+  }
+
   private getPointsForText(text: string, scale: number, cvs: HTMLCanvasElement, ctx: CanvasRenderingContext2D): {x: number, y: number}[] {
     const pts: {x: number, y: number}[] = [];
     ctx.fillStyle = '#000';
@@ -308,22 +416,65 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
   private resetSolidPositions() {
     const arraySpacing = 1.5;
     this.arrayCubes.forEach((cube, i) => {
-        cube.position.set((i - 3) * arraySpacing, 0, 0);
+        const x = (i - 3) * arraySpacing;
+        cube.position.set(x, 0, 0);
         cube.rotation.set(0, 0, 0);
         cube.scale.set(1, 1, 1);
+        if (this.arrayLabels[i]) {
+            this.arrayLabels[i].position.set(x, 0, 0.1);
+            this.arrayLabels[i].scale.set(1.4, 1.4, 1);
+        }
+        if (this.arrayHeaderLabels[i]) {
+            this.arrayHeaderLabels[i].position.set(x, 1.45, 0);
+            this.arrayHeaderLabels[i].scale.set(0.5, 0.5, 1);
+        }
     });
+
     const stackSpacing = 1.5;
     this.stackCubes.forEach((cube, i) => {
-        cube.position.set(0, (3 - i) * stackSpacing, 0);
+        const y = (3 - i) * stackSpacing;
+        cube.position.set(0, y, 0);
         cube.scale.set(1, 1, 1);
+        if (this.stackLabels[i]) {
+            this.stackLabels[i].position.set(0, y, 0.1);
+            this.stackLabels[i].scale.set(1.4, 1.4, 1);
+        }
     });
+
+    const treePos = [
+      { x: 0, y: 1.8 }, { x: -1.8, y: 0.4 }, { x: 1.8, y: 0.4 },
+      { x: -2.7, y: -1.0 }, { x: -0.9, y: -1.0 }, { x: 0.9, y: -1.0 }, { x: 2.7, y: -1.0 }
+    ];
     this.treeNodes.forEach((node, i) => {
-        const treePos = [
-          { x: 0, y: 1.8 }, { x: -1.8, y: 0.4 }, { x: 1.8, y: 0.4 },
-          { x: -2.7, y: -1.0 }, { x: -0.9, y: -1.0 }, { x: 0.9, y: -1.0 }, { x: 2.7, y: -1.0 }
-        ];
-        node.position.set(treePos[i].x, treePos[i].y, 0);
+        const pos = treePos[i];
+        node.position.set(pos.x, pos.y, 0);
         node.scale.set(1, 1, 1);
+        if (this.treeLabels[i]) {
+            this.treeLabels[i].position.set(pos.x, pos.y, 0.1);
+            this.treeLabels[i].scale.set(1.4, 1.4, 1);
+        }
+    });
+
+    const llSpacing = 2.2;
+    this.linkedListCubes.forEach((cube, i) => {
+        const x = (i - 2) * llSpacing;
+        cube.position.set(x, 0, 0);
+        cube.scale.set(1, 1, 1);
+        if (this.linkedListLabels[i]) {
+            this.linkedListLabels[i].position.set(x, 0, 0.1);
+            this.linkedListLabels[i].scale.set(1.4, 1.4, 1);
+        }
+    });
+
+    const qSpacing = 1.6;
+    this.queueNodes.forEach((node, i) => {
+        const x = (i - 2) * qSpacing;
+        node.position.set(x, 0, 0);
+        node.scale.set(1, 1, 1);
+        if (this.queueLabels[i]) {
+            this.queueLabels[i].position.set(x, 0, 0.1);
+            this.queueLabels[i].scale.set(1.4, 1.4, 1);
+        }
     });
   }
 
@@ -392,6 +543,96 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
             this.treeLabels[i].position.set(tx, ty, 0.1);
         }
     }
+  }
+
+  private morphTreeToLinkedList(lam: number) {
+    const treePos = [
+      { x: 0, y: 1.8 }, { x: -1.8, y: 0.4 }, { x: 1.8, y: 0.4 },
+      { x: -2.7, y: -1.0 }, { x: -0.9, y: -1.0 }, { x: 0.9, y: -1.0 }, { x: 2.7, y: -1.0 }
+    ];
+    const llSpacing = 2.2;
+    const llPositions = [
+      { x: -2 * llSpacing, y: 0 }, { x: -1 * llSpacing, y: 0 }, { x: 0, y: 0 },
+      { x: 1 * llSpacing, y: 0 }, { x: 2 * llSpacing, y: 0 }
+    ];
+
+    for (let i = 0; i < 7; i++) {
+        // First 5 nodes morph to LL positions, last 2 fade/shrink
+        const targetX = i < 5 ? llPositions[i].x : llPositions[4].x + 1;
+        const targetY = i < 5 ? llPositions[i].y : 0;
+        const targetScale = i < 5 ? 1 : 0.001;
+
+        const tx = this.lerp(treePos[i].x, targetX, lam);
+        const ty = this.lerp(treePos[i].y, targetY, lam);
+        const ts = this.lerp(1, targetScale, lam);
+
+        if (this.treeNodes[i]) {
+            this.treeNodes[i].position.set(tx, ty, 0);
+            this.treeNodes[i].scale.set(ts, ts, ts);
+        }
+        if (this.treeLabels[i]) {
+            this.treeLabels[i].position.set(tx, ty, 0.1);
+            this.treeLabels[i].scale.set(ts * 1.4, ts * 1.4, 1);
+        }
+
+        if (i < 5) {
+            if (this.linkedListCubes[i]) {
+                this.linkedListCubes[i].position.set(tx, ty, 0);
+                this.linkedListCubes[i].scale.set(ts, ts, ts);
+            }
+            if (this.linkedListLabels[i]) {
+                this.linkedListLabels[i].position.set(tx, ty, 0.1);
+                this.linkedListLabels[i].scale.set(ts * 1.4, ts * 1.4, 1);
+            }
+        }
+    }
+    
+    // Head label placement
+    if (this.headLabel) {
+        const headX = this.lerp(treePos[0].x, llPositions[0].x, lam);
+        const headY = this.lerp(1.8 + 0.8, 1.4, lam);
+        this.headLabel.position.set(headX, headY, 0);
+        (this.headLabel.material as any).opacity = lam;
+    }
+  }
+
+  private morphLinkedListToQueue(lam: number) {
+    const llSpacing = 2.2;
+    const qSpacing = 1.6;
+    
+    for (let i = 0; i < 5; i++) {
+        const llX = (i - 2) * llSpacing;
+        const qX = (i - 2) * qSpacing;
+        
+        const tx = this.lerp(llX, qX, lam);
+        
+        if (this.linkedListCubes[i]) {
+            this.linkedListCubes[i].position.set(tx, 0, 0);
+            this.linkedListCubes[i].scale.set(1 - lam * 0.5, 1 - lam * 0.5, 1 - lam * 0.5);
+            (this.linkedListCubes[i].material as any).opacity = (1.0 - lam);
+        }
+        
+        if (this.queueNodes[i]) {
+            this.queueNodes[i].position.set(tx, 0, 0);
+            (this.queueNodes[i].material as any).opacity = lam;
+        }
+        if (this.queueLabels[i]) {
+            this.queueLabels[i].position.set(tx, 0, 0.1);
+            (this.queueLabels[i].material as any).opacity = lam;
+        }
+    }
+    
+    // Fade out LL arrows and head label
+    this.linkedListArrows.forEach(arrow => {
+        arrow.children.forEach((child: any) => {
+            if (child.material) (child.material as any).opacity = (1.0 - lam);
+        });
+    });
+    if (this.headLabel) (this.headLabel.material as any).opacity = (1.0 - lam);
+    
+    // Fade in FRONT/REAR labels
+    if (this.frontLabel) (this.frontLabel.material as any).opacity = lam;
+    if (this.rearLabel) (this.rearLabel.material as any).opacity = lam;
   }
 
   private generateShapes() {
@@ -805,6 +1046,12 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.arrayGroup.rotation.y = baseTiltY; 
     this.stackGroup.rotation.x = baseTiltX;
     this.stackGroup.rotation.y = baseTiltY;
+    this.treeGroup.rotation.x = baseTiltX;
+    this.treeGroup.rotation.y = baseTiltY;
+    this.linkedListGroup.rotation.x = baseTiltX;
+    this.linkedListGroup.rotation.y = baseTiltY;
+    this.queueGroup.rotation.x = baseTiltX;
+    this.queueGroup.rotation.y = baseTiltY;
 
     // Visibility Logic - Ensure both are visible during the transition to prevent "jumping"
     const isArraySection = (this.morphSmooth > 0.5 && this.morphSmooth < 1.8) || (this.morphSmooth > 6.5 && this.morphSmooth < 7.8);
@@ -814,11 +1061,17 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.arrayGroup.visible = isArraySection;
     this.stackGroup.visible = isStackSection;
     this.treeGroup.visible = isTreeSection;
+    const isLinkedListSection = (this.morphSmooth > 3.2 && this.morphSmooth < 4.8);
+    this.linkedListGroup.visible = isLinkedListSection;
+    const isQueueSection = (this.morphSmooth > 4.2 && this.morphSmooth < 5.8);
+    this.queueGroup.visible = isQueueSection;
     
     // Fade Logic
     let arrayOpacity = 0;
     let stackOpacity = 0;
     let treeOpacity = 0;
+    let llOpacity = 0;
+    let qOpacity = 0;
 
     // NEW: Continuous visibility logic for Array and Stack
     if (this.morphSmooth >= 0.5 && this.morphSmooth <= 1.2) {
@@ -843,12 +1096,34 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
       stackOpacity = 1.0 - transitionLam;
       treeOpacity = transitionLam;
       this.morphStackToTree(transitionLam);
-    } else if (this.morphSmooth >= 2.8 && this.morphSmooth <= 3.8) {
+    } else if (this.morphSmooth >= 2.8 && this.morphSmooth <= 3.2) {
       // Tree is solid and fully visible
       stackOpacity = 0;
       treeOpacity = 1.0;
       this.morphStackToTree(1.0);
-    } else if (this.morphSmooth >= 6.5 && this.morphSmooth <= 7.2) {
+    } else if (this.morphSmooth > 3.2 && this.morphSmooth < 3.8) {
+      // TRANSITION: Tree morphs into Linked List
+      const transitionLam = (this.morphSmooth - 3.2) / 0.6;
+      treeOpacity = 1.0 - transitionLam;
+      llOpacity = transitionLam;
+      this.morphTreeToLinkedList(transitionLam);
+    } else if (this.morphSmooth >= 3.8 && this.morphSmooth <= 4.2) {
+      // Linked List is solid and fully visible
+      treeOpacity = 0;
+      llOpacity = 1.0;
+      this.morphTreeToLinkedList(1.0);
+    } else if (this.morphSmooth > 4.2 && this.morphSmooth < 4.8) {
+      // TRANSITION: Linked List morphs into Queue
+      const transitionLam = (this.morphSmooth - 4.2) / 0.6;
+      this.morphLinkedListToQueue(transitionLam);
+      llOpacity = 1.0 - transitionLam;
+      qOpacity = transitionLam;
+    } else if (this.morphSmooth >= 4.8 && this.morphSmooth <= 5.2) {
+      // Queue is solid and fully visible
+      this.morphLinkedListToQueue(1.0);
+      qOpacity = 1.0;
+    }
+ else if (this.morphSmooth >= 6.5 && this.morphSmooth <= 7.2) {
       // Interactive Array (Fully visible)
       arrayOpacity = 1.0;
       stackOpacity = 0;
@@ -870,13 +1145,19 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     stackOpacity = Math.max(0, Math.min(1, stackOpacity));
     
     this.arrayGroup.children.forEach((child: any) => {
-      if (child.material) child.material.opacity = arrayOpacity * globalOpacity;
+      if (child.material) (child.material as any).opacity = arrayOpacity * globalOpacity;
     });
     this.stackGroup.children.forEach((child: any) => {
-      if (child.material) child.material.opacity = stackOpacity * globalOpacity;
+      if (child.material) (child.material as any).opacity = stackOpacity * globalOpacity;
     });
     this.treeGroup.children.forEach((child: any) => {
-      if (child.material) child.material.opacity = treeOpacity * globalOpacity;
+      if (child.material) (child.material as any).opacity = treeOpacity * globalOpacity;
+    });
+    this.linkedListGroup.children.forEach((child: any) => {
+      if (child.material) (child.material as any).opacity = llOpacity * globalOpacity;
+    });
+    this.queueGroup.children.forEach((child: any) => {
+      if (child.material) (child.material as any).opacity = qOpacity * globalOpacity;
     });
 
     // Handle Tree Edge (Line) Opacity
@@ -888,8 +1169,10 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     const nearArray1 = Math.abs(this.morphSmooth - 1.0) < 0.5;
     const nearStack2 = Math.abs(this.morphSmooth - 2.0) < 0.5;
     const nearTree3 = Math.abs(this.morphSmooth - 3.0) < 0.5;
+    const nearLL4 = Math.abs(this.morphSmooth - 4.0) < 0.5;
+    const nearQueue5 = Math.abs(this.morphSmooth - 5.0) < 0.5;
     const nearArray7 = this.morphSmooth > 6.5;
-    if (nearArray1 || nearStack2 || nearTree3 || nearArray7) {
+    if (nearArray1 || nearStack2 || nearTree3 || nearLL4 || nearQueue5 || nearArray7) {
         this.mat.uniforms['uGlobalOpacity'].value = 0.0;
     } else {
         this.mat.uniforms['uGlobalOpacity'].value = globalOpacity;
@@ -906,12 +1189,16 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.arrayGroup.position.x = this.ptsPosSmooth + mx;
     this.stackGroup.position.x = this.ptsPosSmooth + mx;
     this.treeGroup.position.x = this.ptsPosSmooth + mx;
+    this.linkedListGroup.position.x = this.ptsPosSmooth + mx;
+    this.queueGroup.position.x = this.ptsPosSmooth + mx;
 
     this.posYSmooth = this.lerp(this.posYSmooth, this.posYTarget, 0.08);
     this.pts.position.y = this.posYSmooth + my;
     this.arrayGroup.position.y = this.posYSmooth + my;
     this.stackGroup.position.y = this.posYSmooth + my;
     this.treeGroup.position.y = this.posYSmooth + my;
+    this.linkedListGroup.position.y = this.posYSmooth + my;
+    this.queueGroup.position.y = this.posYSmooth + my;
 
     // 6. Scroll-driven scale
     this.scaleSmooth = this.lerp(this.scaleSmooth, this.scaleTarget, 0.08);
@@ -923,6 +1210,8 @@ export class ThreeSceneComponent implements AfterViewInit, OnDestroy {
     this.arrayGroup.scale.set(solidScale, solidScale, solidScale);
     this.stackGroup.scale.set(solidScale, solidScale, solidScale);
     this.treeGroup.scale.set(solidScale, solidScale, solidScale);
+    this.linkedListGroup.scale.set(solidScale, solidScale, solidScale);
+    this.queueGroup.scale.set(solidScale, solidScale, solidScale);
 
     this.camera.position.x = this.mouse.x * 0.3;
     this.camera.position.y = -this.mouse.y * 0.3;
