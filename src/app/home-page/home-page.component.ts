@@ -2,7 +2,6 @@ import { Component, AfterViewInit, OnDestroy, NgZone, ChangeDetectorRef } from '
 import { CommonModule } from '@angular/common';
 import { HeroSectionComponent } from '../hero-section/hero-section.component';
 import { ServicesSectionComponent } from '../services-section/services-section.component';
-import { CaseStudiesSectionComponent } from '../case-studies-section/case-studies-section.component';
 import { ThreeSceneComponent } from '../three-scene/three-scene.component';
 import { BackgroundCanvasComponent } from '../background-canvas/background-canvas.component';
 import { InteractiveSectionComponent } from '../interactive-section/interactive-section.component';
@@ -18,7 +17,6 @@ gsap.registerPlugin(ScrollTrigger);
     CommonModule,
     HeroSectionComponent,
     ServicesSectionComponent,
-    CaseStudiesSectionComponent,
     ThreeSceneComponent,
     BackgroundCanvasComponent,
     InteractiveSectionComponent
@@ -155,19 +153,7 @@ export class HomePageComponent implements AfterViewInit, OnDestroy {
       );
       if (cardsAnim.scrollTrigger) this.triggers.push(cardsAnim.scrollTrigger);
 
-      // 5. Case studies blast
-      this.triggers.push(ScrollTrigger.create({
-        trigger: '.case-studies',
-        start: 'top 65%',
-        end: 'bottom bottom',
-        scrub: 1.2,
-        onUpdate: (self) => {
-          if (threeState) {
-            threeState.blastProgress = self.progress;
-            threeState.ptsPosTarget = 0 - (4.5 * self.progress); 
-          }
-        }
-      }));
+
 
       // 5.5. Transition from Services to Interactive
       this.triggers.push(ScrollTrigger.create({
